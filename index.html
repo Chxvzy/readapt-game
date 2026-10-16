@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Readapt: Dyslexi-Trouble</title>
+
+    <!-- Fonte Lexend (feita para facilitar a leitura) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        html, body {
+            margin: 0;
+            height: 100%;
+            background: #0d1024;
+            overflow: hidden;
+        }
+
+        #jogo {
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div id="jogo"></div>
+
+    <!-- Phaser 3 por CDN (não precisa instalar nada) -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+
+    <!-- Lista das artes prontas que estão na pasta assets -->
+    <script src="assets/artes.js"></script>
+
+    <!-- Sistemas básicos -->
+    <script src="src/systems/constantes.js"></script>
+    <script src="src/systems/som.js"></script>
+    <script src="src/systems/ui.js"></script>
+
+    <!-- Dados (conteúdo editável: textos, atividades, inimigos, mapas) -->
+    <script src="src/data/textos.js"></script>
+    <script src="src/data/atividades.js"></script>
+    <script src="src/data/inimigos.js"></script>
+    <script src="src/data/itens.js"></script>
+    <script src="src/data/mapas.js"></script>
+
+    <!-- Arte gerada por código -->
+    <script src="src/art/sprites.js"></script>
+
+    <!-- Sistemas do jogo -->
+    <script src="src/systems/estado.js"></script>
+    <script src="src/systems/efeitos.js"></script>
+    <script src="src/systems/hud.js"></script>
+    <script src="src/systems/jogador.js"></script>
+    <script src="src/systems/inimigos.js"></script>
+    <script src="src/systems/atividades.js"></script>
+
+    <!-- Cenas (telas) -->
+    <script src="src/scenes/Boot.js"></script>
+    <script src="src/scenes/Menu.js"></script>
+    <script src="src/scenes/Historia.js"></script>
+    <script src="src/scenes/Game.js"></script>
+    <script src="src/scenes/Boss.js"></script>
+    <script src="src/scenes/End.js"></script>
+
+    <!-- Configuração do Phaser (sempre por último) -->
+    <script src="src/main.js"></script>
+</body>
+</html>
