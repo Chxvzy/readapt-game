@@ -5,6 +5,7 @@ RD.CenaJogo = class extends Phaser.Scene {
     init(dados) { this.dadosInicio = dados || {}; }
 
     create() {
+        RD.camera(this);
         const e = RD.estado;
         this.cen = RD.CENARIOS[e.cenario];
         this.objSala = [];
@@ -296,9 +297,11 @@ RD.CenaJogo = class extends Phaser.Scene {
 
         // Portal para o próximo cenário
         if (d.tipo === 'passagem') {
-            const portal = this.gPortal.create(RD.CENTRO_X, RD.CENTRO_Y, 'portal').setDepth(3);
-            portal.body.setCircle(30, 18, 18);
-            this.tweens.add({ targets: portal, angle: 360, duration: 6000, repeat: -1 });
+            RD.Efeitos.portal(this, RD.CENTRO_X, RD.CENTRO_Y, 1, this.objSala);
+            // área que leva para o próximo cenário (o miolo do portal)
+            const portal = this.add.zone(RD.CENTRO_X, RD.CENTRO_Y, 70, 70);
+            this.physics.add.existing(portal, true);
+            this.gPortal.add(portal);
             const proximo = RD.CENARIOS[RD.estado.cenario + 1];
             if (proximo) {
                 this.objSala.push(this.add.text(RD.CENTRO_X, RD.CENTRO_Y + 72, 'Para: ' + proximo.nome,

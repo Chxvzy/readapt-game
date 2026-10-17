@@ -4,6 +4,7 @@ RD.CenaMenu = class extends Phaser.Scene {
     constructor() { super('Menu'); }
 
     create() {
+        RD.camera(this);
         const W = RD.LARGURA, H = RD.ALTURA;
         this.painel = null;
         this.cameras.main.setBackgroundColor('#07060c');

@@ -44,6 +44,27 @@ RD.Efeitos = {
         return m;
     },
 
+    // Portal animado: brilho, redemoinho girando, anel de pedra com runas e faíscas sendo puxadas
+    portal(cena, x, y, escala, lista) {
+        escala = escala || 1;
+        const brilho = cena.add.image(x, y, 'brilho').setTint(0x7a3cff).setScale(2.4 * escala)
+            .setAlpha(0.45).setBlendMode(Phaser.BlendModes.ADD).setDepth(2);
+        const vortice = cena.add.image(x, y, 'portal_vortice').setScale(escala).setDepth(2.5);
+        const aro = cena.add.image(x, y, 'portal').setScale(escala).setDepth(3);
+        cena.tweens.add({ targets: brilho, alpha: 0.7, scale: 2.7 * escala, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+        cena.tweens.add({ targets: vortice, angle: -360, duration: 2600, repeat: -1 });
+        cena.tweens.add({ targets: aro, angle: 360, duration: 22000, repeat: -1 });
+        const faiscas = cena.add.particles(0, 0, 'faisca', {
+            emitZone: { type: 'edge', source: new Phaser.Geom.Circle(x, y, 95 * escala), quantity: 40 },
+            moveToX: x, moveToY: y, lifespan: 1100,
+            scale: { start: 0.9 * escala, end: 0.1 }, alpha: { start: 0.9, end: 0.2 },
+            tint: [0x5ff0ff, 0x7a3cff, 0xffffff], frequency: 70, blendMode: 'ADD',
+        }).setDepth(2.8);
+        const objs = [brilho, vortice, aro, faiscas];
+        if (lista) lista.push(...objs);
+        return { brilho, vortice, aro, faiscas };
+    },
+
     // Piso, detalhes do chão e sombra das bordas de uma sala
     fundoSala(cena, idCenario, lista) {
         const altura = RD.LINHAS * RD.TILE;

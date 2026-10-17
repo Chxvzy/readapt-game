@@ -35,3 +35,10 @@ RD.REGRAS = {
 // Direções do Readapt e o desenho dele parado em cada uma
 RD.DIRECOES = ['frente', 'costas', 'direita', 'esquerda'];
 RD.TEXTURA_PARADO = { frente: 'readapt', costas: 'readapt_costas', direita: 'readapt_direita', esquerda: 'readapt_esquerda' };
+
+// Qualidade da imagem: o jogo é desenhado em dobro (1920 x 1312) e a câmera
+// aproxima 2x. Assim tudo fica nítido em telas grandes, sem mudar as posições.
+RD.ZOOM = 2;
+RD.camera = function (cena) {
+    cena.cameras.main.setZoom(RD.ZOOM).centerOn(RD.LARGURA / 2, RD.ALTURA / 2);
+};

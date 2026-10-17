@@ -5,6 +5,7 @@ RD.CenaChefe = class extends Phaser.Scene {
     constructor() { super('Chefe'); }
 
     create() {
+        RD.camera(this);
         const e = RD.estado;
         RD.Estado.salvarCheckpoint(); // "Tentar de novo" volta direto para o chefe
 
@@ -40,11 +41,11 @@ RD.CenaChefe = class extends Phaser.Scene {
         this.hud.barraChefe(RD.TEXTOS.chefe.nome);
 
         this.chefe = this.physics.add.sprite(RD.CENTRO_X, RD.TOPO + 175, 'chefe_dislexia').setDepth(52).setScale(1.25); // acima da escuridão para ficar sempre visível
-        this.chefe.body.setCircle(62, 22, 22);
+        // hitbox no formato da montanha de letras (a parte de baixo, mais larga)
+        this.chefe.body.setSize(150, 112).setOffset(9, 52);
         this.chefe.body.setImmovable(true);
         RD.Efeitos.sombra(this, this.chefe, 3).setDepth(5);
-        this.escudo = this.add.circle(this.chefe.x, this.chefe.y, 118).setStrokeStyle(6, 0x7a3cff, 0.8).setDepth(53);
-        this.tweens.add({ targets: this.escudo, scale: 1.06, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+        this.escudo = this.criarEscudo();
         this.tweens.add({ targets: this.chefe, x: { from: 300, to: 660 }, duration: 4200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
         // Vida do chefe: atividades extras deixam ele mais fraco
@@ -79,6 +80,59 @@ RD.CenaChefe = class extends Phaser.Scene {
             this.time.delayedCall(4500, () => RD.UI.aviso(this, RD.TEXTOS.chefe.bonus.replace('{n}', r.extrasFeitos), 3200));
         }
         this.time.delayedCall(1500, () => this.criarLivro());
+    }
+
+    // Escudo: só um círculo roxo em volta da Dislexia, pulsando devagar.
+    // Quando a criança acerta a pergunta, ele estoura como uma bolha.
+    criarEscudo() {
+        const c = this.add.container(this.chefe.x, this.chefe.y + 12).setDepth(53);
+        const raio = 125;
+        const circulo = this.add.circle(0, 0, raio, 0x7a3cff, 0.12).setStrokeStyle(5, 0x9b6bff, 0.85);
+        c.add(circulo);
+        c.raio = raio;
+        this.tweens.add({ targets: c, scale: 1.04, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+        return c;
+    }
+
+    // (mantido para o update; o escudo simples não precisa girar)
+    girarEscudo() { }
+
+    // Animação de estourar: o círculo incha, some, solta uma onda e gotinhas roxas
+    quebrarEscudo() {
+        const e = this.escudo;
+        const x = e.x, y = e.y, r = e.raio;
+        this.tweens.killTweensOf(e);
+        RD.Som.tocar('restaurar');
+        // 1) incha rapidinho
+        this.tweens.add({
+            targets: e, scale: 1.15, duration: 120, ease: 'Quad.easeOut',
+            onComplete: () => {
+                e.setVisible(false).setScale(1).setAlpha(1);
+                // 2) onda que se espalha
+                const onda = this.add.circle(x, y, r).setStrokeStyle(6, 0xc9a0ff, 0.9).setDepth(54);
+                this.tweens.add({ targets: onda, scale: 1.6, alpha: 0, duration: 450, ease: 'Quad.easeOut', onComplete: () => onda.destroy() });
+                // 3) gotinhas da bolha voando para fora
+                for (let i = 0; i < 18; i++) {
+                    const a = (i / 18) * Math.PI * 2 + Math.random() * 0.2;
+                    const gota = this.add.circle(x + Math.cos(a) * r, y + Math.sin(a) * r, Phaser.Math.Between(4, 8), 0x9b6bff, 0.9).setDepth(54);
+                    const dist = Phaser.Math.Between(50, 110);
+                    this.tweens.add({
+                        targets: gota, x: gota.x + Math.cos(a) * dist, y: gota.y + Math.sin(a) * dist + 20,
+                        scale: 0.2, alpha: 0, duration: Phaser.Math.Between(450, 700), ease: 'Quad.easeOut',
+                        onComplete: () => gota.destroy(),
+                    });
+                }
+            },
+        });
+    }
+
+    voltarEscudo() {
+        const e = this.escudo;
+        e.setVisible(true).setScale(0.5).setAlpha(0);
+        this.tweens.add({
+            targets: e, scale: 1, alpha: 1, duration: 450, ease: 'Back.easeOut',
+            onComplete: () => this.tweens.add({ targets: e, scale: 1.04, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' }),
+        });
     }
 
     atualizarBarra() {
@@ -189,13 +243,13 @@ RD.CenaChefe = class extends Phaser.Scene {
         this.tweens.resumeAll();
         if (certo) {
             this.vulneravelAte = this.time.now + 7000;
-            this.escudo.setVisible(false);
+            this.quebrarEscudo();
             this.chefe.setTint(0xffc2d1);
             this.danoChefe(12);
             RD.UI.aviso(this, RD.TEXTOS.chefe.fraca, 2200);
             this.time.delayedCall(7000, () => {
                 if (this.vida <= 0 || this.trocando) return;
-                this.escudo.setVisible(true);
+                this.voltarEscudo();
                 this.chefe.clearTint();
                 this.time.delayedCall(1200, () => this.criarLivro());
             });
@@ -325,7 +379,7 @@ RD.CenaChefe = class extends Phaser.Scene {
         }
     }
 
-    update(tempo) {
+    update(tempo, delta) {
         if (this.trocando) return;
         const J = Phaser.Input.Keyboard.JustDown;
         const t = this.teclas;
@@ -361,7 +415,8 @@ RD.CenaChefe = class extends Phaser.Scene {
         this.atacar(tempo);
 
         RD.Efeitos.atualizar(this);
-        this.escudo.setPosition(this.chefe.x, this.chefe.y);
+        this.girarEscudo(delta);
+        this.escudo.setPosition(this.chefe.x, this.chefe.y + 12);
         this.escuro.setPosition(this.jogador.x, this.jogador.y);
     }
 };

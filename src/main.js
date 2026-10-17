@@ -2,9 +2,11 @@
 RD.jogo = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'jogo',
-    width: RD.LARGURA,
-    height: RD.ALTURA,
+    // desenhado em dobro para ficar nítido (veja RD.ZOOM em constantes.js)
+    width: RD.LARGURA * RD.ZOOM,
+    height: RD.ALTURA * RD.ZOOM,
     backgroundColor: '#0d1024',
+    pixelArt: true,      // pixels nítidos, sem borrar
     roundPixels: true,
     physics: {
         default: 'arcade',

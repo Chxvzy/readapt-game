@@ -9,6 +9,7 @@ RD.CenaFim = class extends Phaser.Scene {
     init(dados) { this.final = (dados && dados.final) || 'normal'; }
 
     create() {
+        RD.camera(this);
         const W = RD.LARGURA, H = RD.ALTURA;
         const f = RD.TEXTOS.finais[this.final];
         const ruim = this.final === 'ruim';

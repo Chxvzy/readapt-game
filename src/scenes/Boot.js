@@ -3,6 +3,7 @@ RD.CenaBoot = class extends Phaser.Scene {
     constructor() { super('Boot'); }
 
     preload() {
+        RD.camera(this);
         this.add.text(RD.LARGURA / 2, RD.ALTURA / 2, 'Carregando...', RD.UI.estilo(28)).setOrigin(0.5);
         const prontas = window.ARTES_PRONTAS || [];
         prontas.forEach((nome) => this.load.image('arquivo_' + nome, 'assets/' + nome + '.png'));

@@ -4,6 +4,7 @@ RD.CenaHistoria = class extends Phaser.Scene {
     constructor() { super('Historia'); }
 
     create() {
+        RD.camera(this);
         const W = RD.LARGURA, H = RD.ALTURA;
         this.pagina = 0;
         this.saindo = false;
@@ -234,9 +235,8 @@ RD.CenaHistoria = class extends Phaser.Scene {
         });
 
         // o portal e o Readapt chegando para salvar
-        const portal = this.add.image(190, 300, 'portal').setScale(2);
-        p.add(portal);
-        this.tweens.add({ targets: portal, angle: 360, duration: 5000, repeat: -1 });
+        const portal = RD.Efeitos.portal(this, 190, 300, 1.6);
+        p.add([portal.brilho, portal.vortice, portal.aro, portal.faiscas]);
         const luzPortal = this.add.image(190, 300, 'brilho').setTint(0x7fd8ff).setScale(2.6).setAlpha(0.4).setBlendMode(Phaser.BlendModes.ADD);
         p.add(luzPortal);
         const robo = this.add.image(190, 300, 'readapt').setScale(0.5).setAlpha(0);

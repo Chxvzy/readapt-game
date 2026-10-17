@@ -527,24 +527,73 @@ RD.Arte = {
         ctx.fillRect(23, 13, 2, 23);
     });
 
-    A.add('portal', 96, 96, 'Portal para o próximo cenário', (ctx) => {
-        const g = ctx.createRadialGradient(48, 48, 8, 48, 48, 48);
-        g.addColorStop(0, 'rgba(120,220,255,0.55)');
-        g.addColorStop(1, 'rgba(120,60,255,0)');
-        ctx.fillStyle = g;
-        ctx.fillRect(0, 0, 96, 96);
-        const cores = ['#14142b', '#4a1f8a', '#7a3cff', '#5ff0ff', '#e8f1ff'];
-        [40, 34, 26, 16, 7].forEach((r, i) => {
-            ctx.fillStyle = cores[i];
-            ctx.beginPath(); ctx.arc(48, 48, r, 0, Math.PI * 2); ctx.fill();
-        });
-        ctx.strokeStyle = '#ffd23f';
-        ctx.lineWidth = 3;
-        for (let i = 0; i < 4; i++) {
-            ctx.beginPath();
-            ctx.arc(48, 48, 22, i * Math.PI / 2, i * Math.PI / 2 + 0.9);
-            ctx.stroke();
+    // Portal: anel de pedra com runas de letras brilhando (o miolo fica vazio:
+    // o redemoinho 'portal_vortice' gira por baixo). Desenhado pela metade e ampliado 2x.
+    A.add('portal', 120, 120, 'Portal: anel de pedra com runas', (ctx) => {
+        const S = 60, c = document.createElement('canvas');
+        c.width = S; c.height = S;
+        const g = c.getContext('2d');
+        const cx = 30, cy = 30;
+        // anel
+        g.fillStyle = K;
+        g.beginPath(); g.arc(cx, cy, 29, 0, Math.PI * 2); g.arc(cx, cy, 18, 0, Math.PI * 2, true); g.fill();
+        g.fillStyle = '#4a4458';
+        g.beginPath(); g.arc(cx, cy, 27.5, 0, Math.PI * 2); g.arc(cx, cy, 19.5, 0, Math.PI * 2, true); g.fill();
+        // luz de cima e sombra de baixo nas pedras
+        g.fillStyle = '#6d6680';
+        g.beginPath(); g.arc(cx, cy, 27.5, Math.PI * 1.05, Math.PI * 1.95); g.arc(cx, cy, 24, Math.PI * 1.95, Math.PI * 1.05, true); g.fill();
+        g.fillStyle = '#2f2b3a';
+        g.beginPath(); g.arc(cx, cy, 27.5, Math.PI * 0.1, Math.PI * 0.9); g.arc(cx, cy, 24, Math.PI * 0.9, Math.PI * 0.1, true); g.fill();
+        // juntas entre as pedras
+        g.strokeStyle = K; g.lineWidth = 1;
+        for (let k = 0; k < 10; k++) {
+            const a = (k / 10) * Math.PI * 2;
+            g.beginPath();
+            g.moveTo(cx + Math.cos(a) * 19.5, cy + Math.sin(a) * 19.5);
+            g.lineTo(cx + Math.cos(a) * 27.5, cy + Math.sin(a) * 27.5);
+            g.stroke();
         }
+        // runas de letras brilhando em cada pedra
+        const runas = 'ABCDELMRSZ';
+        for (let k = 0; k < 10; k++) {
+            const a = ((k + 0.5) / 10) * Math.PI * 2;
+            const x = cx + Math.cos(a) * 23.5, y = cy + Math.sin(a) * 23.5;
+            g.save(); g.translate(x, y); g.rotate(a + Math.PI / 2);
+            g.font = '700 7px ' + RD.FONTE; g.textAlign = 'center'; g.textBaseline = 'middle';
+            g.fillStyle = 'rgba(95,240,255,0.35)'; g.fillText(runas[k], 0.5, 0.5);
+            g.fillStyle = '#9ff6ff'; g.fillText(runas[k], 0, 0);
+            g.restore();
+        }
+        // borda interna brilhando
+        g.strokeStyle = '#5ff0ff'; g.lineWidth = 1.5;
+        g.beginPath(); g.arc(cx, cy, 18.5, 0, Math.PI * 2); g.stroke();
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(c, 0, 0, 120, 120);
+    });
+
+    // Redemoinho do portal (gira por baixo do anel)
+    A.add('portal_vortice', 80, 80, 'Portal: redemoinho do meio', (ctx) => {
+        const S = 40, c = document.createElement('canvas');
+        c.width = S; c.height = S;
+        const g = c.getContext('2d');
+        const cx = 20, cy = 20;
+        g.fillStyle = '#1a0b33';
+        g.beginPath(); g.arc(cx, cy, 19, 0, Math.PI * 2); g.fill();
+        const cores = ['#3b1f7a', '#5a2fb0', '#7a3cff', '#5f9cff', '#5ff0ff', '#c9fbff'];
+        for (let braco = 0; braco < 3; braco++) {
+            for (let t = 0; t <= 1; t += 0.02) {
+                const r = 18 * (1 - t) + 1;
+                const a = braco * (Math.PI * 2 / 3) + t * Math.PI * 3;
+                const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+                g.fillStyle = cores[Math.min(cores.length - 1, Math.floor(t * cores.length))];
+                const tam = 1 + (1 - t) * 3;
+                g.fillRect(Math.round(x - tam / 2), Math.round(y - tam / 2), Math.ceil(tam), Math.ceil(tam));
+            }
+        }
+        g.fillStyle = '#ffffff';
+        g.fillRect(cx - 2, cy - 2, 4, 4);
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(c, 0, 0, 80, 80);
     });
 
     // Portas em arco de pedra (desenhadas para a parede de cima; o jogo gira para os outros lados)
