@@ -13,7 +13,7 @@ RD.CenaMenu = class extends Phaser.Scene {
         this.criarLogo();
         this.criarOpcoes();
 
-        this.add.text(W - 20, H - 44, 'WASD: andar  •  Setas: atirar  •  Enter: escolher',
+        this.add.text(W - 20, H - 44, 'WASD: andar  •  Setas ou Espaço: atirar  •  Enter: escolher',
             RD.UI.estilo(15, '#8a90ad')).setOrigin(1, 0.5).setDepth(40);
         this.add.text(W - 20, H - 20, 'Projeto de TCC • Colégio UNASP', RD.UI.estilo(13, '#5d627c')).setOrigin(1, 0.5).setDepth(40);
 
@@ -189,37 +189,52 @@ RD.CenaMenu = class extends Phaser.Scene {
         const W = RD.LARGURA, H = RD.ALTURA;
         const c = this.add.container(0, 0).setDepth(60);
         this.painel = c;
-        c.add(this.add.rectangle(W / 2, H / 2, W, H, 0x07060c, 0.94));
-        c.add(this.add.text(W / 2, 58, 'Como jogar', RD.UI.estilo(44, '#ffd23f', { fontStyle: '700', stroke: '#000000', strokeThickness: 8 })).setOrigin(0.5));
-        c.add(this.add.rectangle(W / 2, 96, 380, 3, 0xb3261e));
+        c.add(this.add.rectangle(W / 2, H / 2, W, H, 0x07060c, 1));
+        c.add(this.add.text(W / 2, 52, 'Como jogar', RD.UI.estilo(42, '#ffd23f', { fontStyle: '700', stroke: '#000000', strokeThickness: 8 })).setOrigin(0.5));
+        c.add(this.add.rectangle(W / 2, 88, 360, 3, 0xb3261e));
 
-        // --- coluna da esquerda: controles ---
-        const T = (x, y, r, w) => c.add(RD.UI.tecla(this, x, y, r, w));
-        const rotulo = (x, y, txt) => c.add(this.add.text(x, y, txt, RD.UI.estilo(21, '#e9e2d0', { fontStyle: '600' })).setOrigin(0, 0.5));
-        c.add(this.add.text(70, 130, 'Controles', RD.UI.estilo(24, '#ff8c7a', { fontStyle: '700' })));
-
-        T(120, 190, 'W'); T(70, 240, 'A'); T(120, 240, 'S'); T(170, 240, 'D');
-        rotulo(215, 215, 'Andar');
-        T(120, 310, '↑'); T(70, 360, '←'); T(120, 360, '↓'); T(170, 360, '→');
-        rotulo(215, 335, 'Atirar o pulso de restauração');
-        T(90, 425, 'E');
-        rotulo(135, 425, 'Conversar e ouvir a palavra');
-        T(90, 485, 'Esc', 60); T(160, 485, 'M');
-        rotulo(205, 485, 'Pausar   •   Som');
-
-        // --- coluna da direita: dicas ---
-        c.add(this.add.text(540, 130, 'Dicas', RD.UI.estilo(24, '#ff8c7a', { fontStyle: '700' })));
-        const dica = (y, tex, escala, txt, extra) => {
-            c.add(this.add.image(570, y, tex).setScale(escala));
-            if (extra) c.add(extra(570, y));
-            c.add(this.add.text(620, y, txt, RD.UI.estilo(19, '#e9e2d0', { fontStyle: '600', wordWrap: { width: 300 } })).setOrigin(0, 0.5));
+        // duas caixas lado a lado, cada uma com seu espaço
+        const caixa = (x, w, titulo) => {
+            c.add(this.add.rectangle(x + w / 2, 318, w, 420, 0x14111f, 1).setStrokeStyle(2, 0x3a3150));
+            c.add(this.add.text(x + 20, 122, titulo, RD.UI.estilo(23, '#ff8c7a', { fontStyle: '700' })));
         };
-        dica(190, 'porta_trancada', 0.55, 'Restaure as criaturas para abrir as portas.');
-        dica(265, 'bloco_letra', 0.7, 'Nas atividades, atire nas letras na ordem certa.',
-            (x, y) => this.add.text(x, y - 2, 'A', RD.UI.estilo(26, '#14142b', { fontStyle: '700' })).setOrigin(0.5));
-        dica(340, 'rachada_letras', 0.55, 'Paredes rachadas escondem salas secretas.');
-        dica(415, 'livro', 1, 'No chefe, encoste no livro brilhante e responda.');
-        dica(485, 'coracao_meio', 1, 'Errar faz parte de aprender: tente com calma!');
+        caixa(30, 430, 'Controles');
+        caixa(480, 450, 'Dicas');
+
+        // --- caixa da esquerda: controles ---
+        // teclas um pouco menores, cada controle numa linha separada por um risco fino
+        const T = (x, y, r, w) => c.add(RD.UI.tecla(this, x, y, r, w).setScale(0.75));
+        const rotulo = (y, txt) => c.add(this.add.text(205, y, txt,
+            RD.UI.estilo(19, '#e9e2d0', { fontStyle: '600' })).setOrigin(0, 0.5));
+        const risco = (y) => c.add(this.add.rectangle(245, y, 390, 2, 0x2a2340));
+
+        T(105, 178, 'W'); T(67, 214, 'A'); T(105, 214, 'S'); T(143, 214, 'D');
+        rotulo(196, 'Andar');
+        risco(246);
+        T(105, 274, '↑'); T(67, 310, '←'); T(105, 310, '↓'); T(143, 310, '→');
+        rotulo(292, 'Mirar e atirar');
+        risco(342);
+        T(105, 368, 'Espaço', 130);
+        rotulo(368, 'Atirar para a frente');
+        risco(396);
+        T(105, 422, 'E');
+        rotulo(422, 'Conversar / ouvir');
+        risco(450);
+        T(84, 478, 'Esc', 62); T(134, 478, 'M');
+        rotulo(478, 'Pausar  •  Som');
+
+        // --- caixa da direita: dicas ---
+        const dica = (y, tex, escala, txt, extra) => {
+            c.add(this.add.image(530, y, tex).setScale(escala));
+            if (extra) c.add(extra(530, y));
+            c.add(this.add.text(575, y, txt, RD.UI.estilo(17, '#e9e2d0', { fontStyle: '600', wordWrap: { width: 340 }, lineSpacing: 2 })).setOrigin(0, 0.5));
+        };
+        dica(190, 'porta_trancada', 0.5, 'Restaure as criaturas para abrir as portas.');
+        dica(262, 'bloco_letra', 0.6, 'Nas atividades, atire nas letras na ordem certa.',
+            (x, y) => this.add.text(x, y - 2, 'A', RD.UI.estilo(22, '#14142b', { fontStyle: '700' })).setOrigin(0.5));
+        dica(334, 'rachada_letras', 0.45, 'Paredes rachadas escondem salas secretas.');
+        dica(406, 'livro', 0.9, 'No chefe, encoste no livro brilhante e responda.');
+        dica(478, 'coracao_meio', 0.9, 'Errar faz parte de aprender: tente com calma!');
 
         const voltar = RD.UI.itemMenu(this, W / 2 - 60, 580, 'Voltar', () => this.fecharComoJogar());
         c.add(voltar);

@@ -115,6 +115,7 @@ RD.CenaJogo = class extends Phaser.Scene {
         }
 
         this.criarParedesEPortas(chave, d);
+        this.entradaSala = entrada;
         this.criarConteudo(d, k);
         this.posicionarJogador(entrada);
 
@@ -295,17 +296,41 @@ RD.CenaJogo = class extends Phaser.Scene {
             });
         }
 
-        // Portal para o próximo cenário
+        // Buraco com escada para o próximo cenário + plaquinha dizendo para onde vai
         if (d.tipo === 'passagem') {
-            RD.Efeitos.portal(this, RD.CENTRO_X, RD.CENTRO_Y, 1, this.objSala);
-            // área que leva para o próximo cenário (o miolo do portal)
-            const portal = this.add.zone(RD.CENTRO_X, RD.CENTRO_Y, 70, 70);
+            const cx = RD.CENTRO_X - 20, cy = RD.CENTRO_Y;
+            // a escada fica virada para a porta por onde o jogador chega
+            let lado = this.entradaSala;
+            if (!lado) {
+                const [sx, sy] = this.salaChave.split(',').map(Number);
+                const viz = { cima: [0, -1], baixo: [0, 1], esquerda: [-1, 0], direita: [1, 0] };
+                lado = Object.keys(viz).find(l => this.cen.salas[(sx + viz[l][0]) + ',' + (sy + viz[l][1])]) || 'cima';
+            }
+            this.objSala.push(this.add.image(cx, cy, 'escada_' + this.cen.id + '_' + lado).setDepth(1.5));
+            this.escadaInfo = { cx, cy, lado };
+            // poeirinha subindo devagar do buraco
+            this.objSala.push(this.add.particles(0, 0, 'faisca', {
+                x: { min: cx - 26, max: cx + 26 }, y: { min: cy - 14, max: cy + 26 },
+                speedY: { min: -16, max: -6 }, lifespan: 2000, frequency: 320,
+                scale: { start: 0.4, end: 0.1 }, alpha: { start: 0.3, end: 0 }, tint: 0xc9d3ff,
+            }).setDepth(1.6));
+            // área que leva para o próximo cenário (o meio da escada)
+            const portal = this.add.zone(cx, cy + 4, 44, 44);
             this.physics.add.existing(portal, true);
             this.gPortal.add(portal);
             const proximo = RD.CENARIOS[RD.estado.cenario + 1];
             if (proximo) {
-                this.objSala.push(this.add.text(RD.CENTRO_X, RD.CENTRO_Y + 72, 'Para: ' + proximo.nome,
-                    RD.UI.estilo(20, '#ffffff', { backgroundColor: '#14142b', padding: { x: 10, y: 5 } })).setOrigin(0.5).setDepth(4));
+                const px = cx + 92, py = cy - 14;
+                const placa = this.add.image(px, py, 'placa').setDepth(6);
+                this.objSala.push(placa);
+                this.objSala.push(this.add.text(px, py - 11, proximo.nome, RD.UI.estilo(10, '#2a1a0e', {
+                    fontStyle: '700', align: 'center', wordWrap: { width: 70 }, lineSpacing: -3,
+                })).setOrigin(0.5).setDepth(6.1));
+                // a placa é sólida (não dá para atravessar)
+                const z = this.add.zone(px, py + 22, 16, 12);
+                this.physics.add.existing(z, true);
+                this.gObst.add(z);
+                RD.Efeitos.sombra(this, placa, 0.6, 27);
             }
         }
     }
@@ -430,9 +455,69 @@ RD.CenaJogo = class extends Phaser.Scene {
     proximoCenario() {
         if (this.trocando) return;
         this.trocando = true;
-        RD.Som.tocar('portal');
         this.jogador.setVelocity(0, 0);
-        this.tweens.add({ targets: this.jogador, scale: 0, angle: 360, duration: 600 });
+        this.descerEscada(() => this.irParaProximoCenario());
+    }
+
+    // O Readapt anda até o primeiro degrau e desce degrau por degrau:
+    // a cada passo ele fica menor e mais escuro, e o corpo some atrás da
+    // borda do fundo do buraco.
+    descerEscada(fim) {
+        const j = this.jogador;
+        const info = this.escadaInfo;
+        if (!info) { fim(); return; }
+        j.body.enable = false;
+        j.anims.stop();
+        // a sombra do Readapt não desce junto
+        (this.sombras || []).forEach((s) => { if (s.alvo === j) s.destroy(); });
+
+        const { cx, cy, lado } = info;
+        // para onde a escada desce (contrário da porta de entrada) e a animação de andar
+        const dir = { cima: [0, 1, 'frente'], baixo: [0, -1, 'costas'], esquerda: [1, 0, 'direita'], direita: [-1, 0, 'esquerda'] }[lado];
+        const [dx, dy, anim] = dir;
+        const PES = 26;                       // dos pés até o meio do sprite
+        const degraus = [-28, -16, -4, 8, 20]; // meio de cada degrau, a partir do centro do buraco
+        const pos = (i, escala) => {
+            const d = degraus[i];
+            if (dy) return { x: cx, y: cy + dy * d - PES * escala };
+            return { x: cx + dx * d, y: cy + 4 + i * 3 - PES * escala };
+        };
+
+        // o corpo é cortado na borda do fundo do buraco
+        const g = this.make.graphics({ add: false });
+        g.fillStyle(0xffffff);
+        const B = 34, G = 2000;
+        if (dy > 0) g.fillRect(-G, -G, 2 * G, cy + B + G);
+        else if (dy < 0) g.fillRect(-G, cy - B, 2 * G, G);
+        else if (dx > 0) g.fillRect(-G, -G, cx + B + G, 2 * G);
+        else g.fillRect(cx - B, -G, G, 2 * G);
+        j.setMask(g.createGeometryMask());
+
+        j.anims.play('andar_' + anim, true);
+        // 1) chega no primeiro degrau
+        const p0 = pos(0, 1);
+        this.tweens.add({ targets: j, x: p0.x, y: p0.y, duration: 260, onComplete: () => {
+            // 2) desce degrau por degrau
+            let i = 0;
+            const passo = () => {
+                i++;
+                if (i >= degraus.length) {
+                    RD.Som.tocar('portal');
+                    this.tweens.add({ targets: j, alpha: 0, duration: 200, onComplete: fim });
+                    return;
+                }
+                const escala = 1 - i * 0.07;
+                const p = pos(i, escala);
+                const escuro = Math.round(255 * (1 - i * 0.16));
+                j.setTint(Phaser.Display.Color.GetColor(escuro, escuro, escuro + 10 > 255 ? 255 : escuro + 10));
+                this.tweens.add({ targets: j, x: p.x, y: p.y, scale: escala, duration: 230, ease: 'Quad.easeIn', onComplete: passo });
+                RD.Som.tocar('passo');
+            };
+            passo();
+        } });
+    }
+
+    irParaProximoCenario() {
         this.cameras.main.fadeOut(800, 13, 16, 36);
         this.cameras.main.once('camerafadeoutcomplete', () => {
             const e = RD.estado;

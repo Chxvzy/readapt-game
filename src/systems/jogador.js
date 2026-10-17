@@ -28,8 +28,9 @@ RD.Jogador = {
         if (t.S.isDown) vy += 1;
         const v = new Phaser.Math.Vector2(vx, vy).normalize().scale(RD.REGRAS.velocidadeJogador);
         j.setVelocity(v.x, v.y);
-        // vira para onde anda (a não ser que tenha acabado de atirar para outro lado)
-        if (cena.time.now > cena.olharAte) {
+        // vira para onde anda. Depois de atirar com as setas ele fica olhando para o lado
+        // do tiro por um instante (como o Isaac); com o Espaço ele vira na hora.
+        if (cena.time.now > cena.olharAte || (cena.teclas.SPACE.isDown && !RD.Jogador.setaApertada(cena))) {
             if (vy < 0) cena.direcao = 'costas';
             else if (vy > 0) cena.direcao = 'frente';
             else if (vx < 0) cena.direcao = 'esquerda';
@@ -46,6 +47,11 @@ RD.Jogador = {
         }
     },
 
+    setaApertada(cena) {
+        const t = cena.teclas;
+        return t.LEFT.isDown || t.RIGHT.isDown || t.UP.isDown || t.DOWN.isDown;
+    },
+
     atirar(cena, tempo) {
         const t = cena.teclas;
         let dx = 0, dy = 0;
@@ -53,7 +59,13 @@ RD.Jogador = {
         else if (t.RIGHT.isDown) dx = 1;
         else if (t.UP.isDown) dy = -1;
         else if (t.DOWN.isDown) dy = 1;
+        // Espaço: atira para onde o Readapt está olhando (dá para jogar com uma mão só)
+        else if (t.SPACE.isDown) {
+            const d = { frente: [0, 1], costas: [0, -1], esquerda: [-1, 0], direita: [1, 0] }[cena.direcao] || [0, 1];
+            dx = d[0]; dy = d[1];
+        }
         if (!dx && !dy) return;
+        const comSeta = RD.Jogador.setaApertada(cena);
         if (tempo - cena.ultimoTiro < RD.REGRAS.intervaloTiro) return;
         cena.ultimoTiro = tempo;
         const j = cena.jogador;
@@ -78,18 +90,24 @@ RD.Jogador = {
             .setBlendMode(Phaser.BlendModes.ADD).setScale(0.25).setAlpha(0.9).setDepth(9);
         cena.tweens.add({ targets: luz, scale: 0.5, alpha: 0, duration: 140, onComplete: () => luz.destroy() });
         if (cena.objSala) cena.objSala.push(luz); // some junto se trocar de sala
-        cena.olharAte = tempo + 350;
+        cena.olharAte = comSeta ? tempo + 350 : 0;
         RD.Som.tocar('tiro');
     },
 
-    // Remove tiros que já foram longe demais
+    // Os tiros não podem sair do chão da sala (nem pelo vão das portas abertas)
+    foraDaSala(t) {
+        const m = RD.TILE - 8;
+        return t.x < m || t.x > RD.LARGURA - m || t.y < RD.TOPO + m || t.y > RD.ALTURA - m;
+    },
+
+    // Remove tiros que já foram longe demais ou bateram na borda da sala
     limparTiros(cena, tempo) {
         cena.gTiros.getChildren().slice().forEach((t) => {
-            if (tempo > t.morreEm) t.destroy();
+            if (tempo > t.morreEm || RD.Jogador.foraDaSala(t)) t.destroy();
             else if (tempo > t.morreEm - 150) t.setScale(t.escalaBase * 0.8); // a gota "cai" no fim
         });
         cena.gTirosInim.getChildren().slice().forEach((t) => {
-            if (t.x < -30 || t.x > RD.LARGURA + 30 || t.y < RD.TOPO - 30 || t.y > RD.ALTURA + 30) t.destroy();
+            if (RD.Jogador.foraDaSala(t)) t.destroy();
         });
     },
 

@@ -60,7 +60,7 @@ RD.CenaHistoria = class extends Phaser.Scene {
         this.pontos.forEach((p, i) => p.setFillStyle(i === this.pagina ? 0xffd23f : 0x5a5f7a));
         if (this.palco) { this.tweens.killAll(); this.palco.destroy(); }
         this.palco = this.add.container(0, 0).setDepth(1);
-        [this.cenaLaboratorio, this.cenaMente, this.cenaMissao][this.pagina].call(this, this.palco);
+        [this.cenaLaboratorio, this.cenaMente, this.cenaAndares, this.cenaMissao][this.pagina].call(this, this.palco);
 
         // zoom bem lento na ilustração (efeito de cinema)
         this.palco.setScale(1);
@@ -205,7 +205,105 @@ RD.CenaHistoria = class extends Phaser.Scene {
         });
     }
 
-    // PÁGINA 3: a Dislexia prende a criança e o Readapt chega pelo portal
+    // PÁGINA 3: o "porão" da mente visto em corte, com os três andares do jogo
+    cenaAndares(p) {
+        const W = RD.LARGURA;
+        p.add(this.add.rectangle(W / 2, this.ALTURA_PALCO / 2, W, this.ALTURA_PALCO, 0x050408));
+        const andares = [
+            { id: 'letras', cor: '#9fb3ff' },
+            { id: 'labirinto', cor: '#c49bff' },
+            { id: 'nucleo', cor: '#ff7a8f' },
+        ];
+        const altura = 136, x0 = 40, largura = W - 80;
+        andares.forEach((a, i) => {
+            const y0 = 36 + i * 146, cy = y0 + altura / 2;
+            const nome = RD.CENARIOS[i].nome;
+            p.add(this.add.tileSprite(W / 2, cy, largura, altura, 'piso_' + a.id));
+            p.add(this.add.tileSprite(W / 2, y0 + 12, largura, 24, 'parede_' + a.id));
+            p.add(this.add.tileSprite(W / 2, y0 + altura - 6, largura, 12, 'parede_' + a.id));
+            p.add(this.add.rectangle(W / 2, cy, largura, altura).setStrokeStyle(4, 0x000000));
+            // nome do andar numa plaquinha
+            p.add(this.add.text(x0 + 20, y0 + 34, (i + 1) + '. ' + nome, RD.UI.estilo(19, a.cor, {
+                fontStyle: '700', stroke: '#000000', strokeThickness: 5,
+            })));
+        });
+
+        // 1º andar: o Readapt anda, atira no monstrinho, ele some e o Readapt desce a escada
+        const y1 = 36 + altura / 2 + 14;
+        p.add(this.add.image(800, y1, 'escada_letras_esquerda').setScale(0.9));
+        const monstro = this.add.image(500, y1 + 10, 'letra_torta');
+        const robo = this.add.sprite(160, y1, 'readapt_direita').setScale(1.2);
+        p.add([monstro, robo]);
+        const vivo = () => robo.active && this.palco === p;
+        const esperar = (ms, fn) => this.time.delayedCall(ms, () => { if (vivo()) fn(); });
+        const ciclo = () => {
+            if (!vivo()) return;
+            robo.setPosition(160, y1).setAlpha(1).setScale(1.2).setTexture('readapt_direita');
+            monstro.setAlpha(1).setScale(1).setAngle(0);
+            robo.anims.play('andar_direita');
+            // 1) anda até perto do monstrinho
+            this.tweens.add({ targets: robo, x: 360, duration: 1700, onComplete: () => {
+                if (!vivo()) return;
+                robo.anims.stop(); robo.setTexture('readapt_direita');
+                // 2) atira três vezes
+                let tiros = 0;
+                const atirar = () => {
+                    if (!vivo()) return;
+                    robo.anims.play('atirar_direita');
+                    const t = this.add.image(robo.x + 22, robo.y + 8, 'pulso').setScale(0.8);
+                    p.add(t);
+                    this.tweens.add({ targets: t, x: monstro.x - 14, duration: 260, onComplete: () => {
+                        t.destroy();
+                        if (!vivo()) return;
+                        const r = this.add.image(monstro.x - 12, monstro.y, 'respingo').setTint(0x9fe6ff).setScale(0.5);
+                        p.add(r);
+                        this.tweens.add({ targets: r, scale: 1.1, alpha: 0, duration: 220, onComplete: () => r.destroy() });
+                        this.tweens.add({ targets: monstro, x: monstro.x + 4, duration: 60, yoyo: true });
+                    } });
+                    tiros++;
+                    if (tiros < 3) esperar(320, atirar);
+                    else esperar(500, () => {
+                        // 3) o monstrinho é restaurado e some
+                        this.tweens.add({ targets: monstro, alpha: 0, scale: 0.4, angle: 90, duration: 450 });
+                        esperar(600, () => {
+                            // 4) anda até a escada e desce
+                            robo.anims.play('andar_direita');
+                            this.tweens.add({ targets: robo, x: 795, duration: 2200, onComplete: () => {
+                                if (!vivo()) return;
+                                robo.anims.stop(); robo.setTexture('readapt_costas');
+                                this.tweens.add({ targets: robo, y: y1 + 14, scale: 0.7, alpha: 0, duration: 700, ease: 'Quad.easeIn' });
+                                esperar(1600, ciclo);
+                            } });
+                        });
+                    });
+                };
+                atirar();
+            } });
+        };
+        ciclo();
+
+        // 2º andar: chega pela direita, a escada fica à esquerda
+        const y2 = 36 + 146 + altura / 2 + 14;
+        p.add(this.add.image(360, y2, 'escada_labirinto_direita').setScale(0.9));
+        p.add(this.add.image(720, y2 + 6, 'criatura_confusao'));
+        p.add(this.add.image(560, y2 + 10, 'palavra_embaralhada'));
+
+        // 3º andar: a Dislexia prendendo a criança
+        const y3 = 36 + 292 + altura / 2 + 10;
+        const chefe = this.add.image(720, y3 - 8, 'chefe_dislexia').setScale(0.62);
+        p.add(chefe);
+        this.tweens.add({ targets: chefe, scale: 0.66, duration: 1600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+        p.add(this.add.image(600, y3 + 18, 'crianca').setScale(1.1));
+
+        // setinhas mostrando o caminho para baixo
+        [[800, 36 + altura + 5], [360, 36 + 146 + altura + 5]].forEach(([x, y], i) => {
+            const s = this.add.text(x, y, '▼', RD.UI.estilo(22, '#ffd23f', { stroke: '#000000', strokeThickness: 5 })).setOrigin(0.5);
+            p.add(s);
+            this.tweens.add({ targets: s, y: y + 5, duration: 700, yoyo: true, repeat: -1, delay: i * 300, ease: 'Sine.easeInOut' });
+        });
+    }
+
+    // PÁGINA 4: a Dislexia prende a criança e o Readapt sobe da escada para salvar
     cenaMissao(p) {
         const W = RD.LARGURA, A = this.ALTURA_PALCO;
         const g = this.add.graphics();
@@ -234,17 +332,18 @@ RD.CenaHistoria = class extends Phaser.Scene {
             })).setOrigin(0.5).setAngle((i - 1) * 25));
         });
 
-        // o portal e o Readapt chegando para salvar
-        const portal = RD.Efeitos.portal(this, 190, 300, 1.6);
-        p.add([portal.brilho, portal.vortice, portal.aro, portal.faiscas]);
-        const luzPortal = this.add.image(190, 300, 'brilho').setTint(0x7fd8ff).setScale(2.6).setAlpha(0.4).setBlendMode(Phaser.BlendModes.ADD);
-        p.add(luzPortal);
-        const robo = this.add.image(190, 300, 'readapt').setScale(0.5).setAlpha(0);
-        p.add(robo);
-        this.tweens.add({ targets: robo, x: 350, y: 360, scale: 3, alpha: 1, duration: 1400, ease: 'Back.easeOut', delay: 500 });
+        // o Readapt chegando pela escada do porão
+        p.add(this.add.image(250, 392, 'escada_nucleo_baixo').setScale(1.5));
         p.add(this.add.particles(0, 0, 'faisca', {
-            x: 190, y: 300, lifespan: 900, speed: { min: 60, max: 160 }, scale: { start: 0.8, end: 0 },
-            alpha: { start: 0.9, end: 0 }, tint: [0x5ff0ff, 0xffffff, 0x7a3cff], frequency: 60, blendMode: 'ADD',
+            x: { min: 200, max: 300 }, y: { min: 360, max: 420 }, speedY: { min: -18, max: -8 },
+            lifespan: 2200, frequency: 220, scale: { start: 0.5, end: 0.1 }, alpha: { start: 0.35, end: 0 }, tint: 0xffb3c1,
         }));
+        const robo = this.add.image(250, 410, 'readapt_costas').setScale(2.2).setAlpha(0);
+        p.add(robo);
+        this.tweens.add({ targets: robo, y: 340, alpha: 1, scale: 3, duration: 1300, ease: 'Quad.easeOut', delay: 500,
+            onComplete: () => {
+                robo.setTexture('readapt_direita');
+                this.tweens.add({ targets: robo, x: 360, y: 350, duration: 700, ease: 'Sine.easeOut' });
+            } });
     }
 };

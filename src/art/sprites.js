@@ -304,56 +304,83 @@ RD.Arte = {
     })();
 
     // ---------------- CHEFE ----------------
-    // A Dislexia: uma montanha de letras embaralhadas (algumas viradas ao contrário),
-    // com dois olhos vermelhos espiando no alto. Desenhada em metade do tamanho
-    // e ampliada 2x para ficar com cara de pixel art.
-    A.add('chefe_dislexia', 168, 168, 'Chefe final: a Dislexia (montanha de letras)', (ctx) => {
+    // A Dislexia: uma nuvem enorme de letras roxas emboladas, com dois olhos
+    // vermelhos brilhando no meio. Desenhada em metade do tamanho e ampliada 2x
+    // (pixel art). Nenhuma letra encosta na borda, então nada fica cortado.
+    A.add('chefe_dislexia', 168, 168, 'Chefe final: a Dislexia (nuvem de letras)', (ctx) => {
         const S = 84;
         const tela = document.createElement('canvas');
         tela.width = S; tela.height = S;
         const c = tela.getContext('2d');
         const r = A.aleatorio(4242);
-        const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZbdpq';
-        const cores = ['#e9e2d0', '#cfc6b0', '#ff4d6d', '#b3261e', '#8a4fb8', '#6b2f8f', '#5d6b8a', '#ffd23f'];
+        const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZbdpq?';
+        // formato da nuvem: um "corpo" no meio e dois braços caídos dos lados
+        const bolhas = [
+            [42, 36, 30, 24], [18, 44, 15, 21], [66, 44, 15, 21],
+            [10, 60, 8, 14], [74, 61, 8, 14], [30, 58, 15, 12], [54, 58, 15, 12],
+        ];
+        const dentro = (x, y, folga) => bolhas.some(([bx, by, rx, ry]) => {
+            const dx = (x - bx) / Math.max(1, rx - folga), dy = (y - by) / Math.max(1, ry - folga);
+            return dx * dx + dy * dy <= 1;
+        });
         const letra = (l, x, y, tam, cor, ang, espelho) => {
             c.save(); c.translate(x, y); c.rotate(ang); c.scale(espelho ? -1 : 1, 1);
             c.font = '700 ' + tam + 'px ' + RD.FONTE;
             c.textAlign = 'center'; c.textBaseline = 'middle';
-            c.lineWidth = 3; c.strokeStyle = K; c.strokeText(l, 0, 0);
+            c.lineWidth = 2.5; c.strokeStyle = '#140a28'; c.strokeText(l, 0, 0);
             c.fillStyle = cor; c.fillText(l, 0, 0);
             c.restore();
         };
 
-        // sombra escura da montanha (para não ficar "vazada" entre as letras)
-        c.fillStyle = '#1a0d24';
-        c.beginPath();
-        c.moveTo(2, 82); c.quadraticCurveTo(14, 40, 42, 10); c.quadraticCurveTo(70, 40, 82, 82);
-        c.closePath(); c.fill();
+        // miolo escuro (para não aparecer o chão entre as letras)
+        c.fillStyle = '#170b2c';
+        bolhas.forEach(([bx, by, rx, ry]) => { c.beginPath(); c.ellipse(bx, by, rx - 3, ry - 3, 0, 0, Math.PI * 2); c.fill(); });
 
-        // camadas de letras: de baixo (grandes) para cima (pequenas)
-        for (let y = 80; y >= 16; y -= 4) {
-            const t = (80 - y) / 64;                 // 0 embaixo, 1 no topo
-            const meia = 40 * (1 - t) + 4;           // metade da largura da montanha nesta altura
-            const qtd = Math.max(1, Math.round(meia / 5));
-            for (let i = 0; i < qtd; i++) {
-                const x = 42 + (r() * 2 - 1) * meia;
-                const tam = Math.round(18 - t * 8 + r() * 4);
-                letra(letras[Math.floor(r() * letras.length)], x, y + (r() - 0.5) * 3, tam,
-                    cores[Math.floor(r() * cores.length)], (r() - 0.5) * 1.6, r() < 0.3);
+        // várias camadas: as de trás mais escuras, as da frente mais claras
+        const camadas = [
+            { qtd: 45, tam: [15, 18], cores: ['#3d2275', '#462884', '#4f2d94'] },
+            { qtd: 40, tam: [13, 16], cores: ['#5a33a8', '#6338b6', '#6c3fc4'] },
+            { qtd: 32, tam: [11, 14], cores: ['#7a4fd6', '#8558e0', '#7148cc'] },
+            { qtd: 18, tam: [10, 12], cores: ['#9a74f0', '#a886ff', '#8d66e8'] },
+        ];
+        camadas.forEach((cam) => {
+            let feitas = 0, tentativas = 0;
+            while (feitas < cam.qtd && tentativas < 2000) {
+                tentativas++;
+                const tam = cam.tam[0] + Math.floor(r() * (cam.tam[1] - cam.tam[0] + 1));
+                const m = Math.ceil(tam * 0.55) + 1;                // a letra inteira cabe na tela
+                const x = m + r() * (S - 2 * m), y = m + r() * (S - 2 * m);
+                if (!dentro(x, y, tam * 0.3)) continue;
+                if (cam.qtd < 40 && Math.abs(y - 36) < 8 && Math.abs(x - 42) < 18) continue;   // deixa os olhos à mostra
+                // letras de cima pegam mais luz
+                const cor = cam.cores[Math.floor(r() * cam.cores.length)];
+                letra(letras[Math.floor(r() * letras.length)], x, y, tam, y < 34 ? RD.Arte.tom(cor, 0.12) : cor,
+                    (r() - 0.5) * 2.2, r() < 0.3);
+                feitas++;
             }
-        }
+        });
 
-        // olhos espiando entre as letras (os mesmos lugares usados pelo brilho no menu)
-        [[33, 36], [51, 36]].forEach(([ex, ey], i) => {
-            c.fillStyle = K; c.fillRect(ex - 6, ey - 4, 12, 8);
-            c.fillStyle = '#ff2a2a'; c.fillRect(ex - 5, ey - 3, 10, 6);
-            c.fillStyle = '#ffd0d0'; c.fillRect(ex - 2 + (i ? -1 : 1), ey - 2, 3, 3);
-            c.fillStyle = K;
-            c.save(); c.translate(ex, ey - 6); c.rotate(i ? -0.4 : 0.4); c.fillRect(-7, -1, 14, 3); c.restore();
+        // buraco escuro onde ficam os olhos
+        c.fillStyle = '#0d0618';
+        c.beginPath(); c.ellipse(42, 36, 15, 7, 0, 0, Math.PI * 2); c.fill();
+
+        // olhos redondos vermelhos (mesmos lugares usados pelo brilho no menu e na história)
+        [[33, 36], [51, 36]].forEach(([ex, ey]) => {
+            c.fillStyle = '#120822'; c.beginPath(); c.arc(ex, ey, 5, 0, Math.PI * 2); c.fill();
+            c.fillStyle = '#ff3355'; c.beginPath(); c.arc(ex, ey, 4, 0, Math.PI * 2); c.fill();
+            c.fillStyle = '#ff8fa3'; c.fillRect(ex - 2, ey - 2, 2, 2);
         });
 
         ctx.imageSmoothingEnabled = false;
         ctx.drawImage(tela, 0, 0, 168, 168);
+        // brilho suave em volta dos olhos
+        [[66, 72], [102, 72]].forEach(([ex, ey]) => {
+            const gr = ctx.createRadialGradient(ex, ey, 6, ex, ey, 20);
+            gr.addColorStop(0, 'rgba(255,60,90,0.45)');
+            gr.addColorStop(1, 'rgba(255,60,90,0)');
+            ctx.fillStyle = gr;
+            ctx.fillRect(ex - 20, ey - 20, 40, 40);
+        });
     });
 
     // ---------------- PERSONAGENS AMIGOS ----------------
@@ -795,6 +822,93 @@ RD.Arte = {
             RD.Arte.desenharDetalhes(ctx, w, h, id, 401 + n);
         }, true);
     });
+
+    // ---------------- ESCADA PARA O PRÓXIMO ANDAR ----------------
+    // Um buraco no chão com borda de pedra e degraus descendo para o escuro
+    // (leva para o próximo cenário, como descer para o porão).
+    Object.keys(RD.CORES_CENARIO).forEach((id) => {
+        const c = RD.CORES_CENARIO[id];
+        const N = 48;
+        const g = Pintor.grade(N, N);
+        // borda de pedra com cantos lascados
+        Pintor.ret(g, 2, 3, N - 4, N - 6, 's');
+        Pintor.ret(g, 3, 2, N - 6, N - 4, 's');
+        [[2, 3], [N - 3, 3], [2, N - 4], [N - 3, N - 4]].forEach(([x, y]) => Pintor.px(g, x, y, '.'));
+        // juntas entre as pedras da borda
+        for (let x = 8; x < N - 4; x += 8) { Pintor.ret(g, x, 2, 1, 5, 'j'); Pintor.ret(g, x - 4, N - 7, 1, 5, 'j'); }
+        for (let y = 9; y < N - 6; y += 8) { Pintor.ret(g, 2, y, 5, 1, 'j'); Pintor.ret(g, N - 7, y - 4, 5, 1, 'j'); }
+        // buraco escuro
+        Pintor.ret(g, 7, 7, N - 14, N - 14, 'e');
+        // degraus: cada um mais estreito e mais escuro, sumindo no fundo
+        const passos = 5;
+        for (let i = 0; i < passos; i++) {
+            const y = 7 + i * 6, inset = i * 2;
+            const x0 = 9 + inset, w = N - 18 - inset * 2;
+            Pintor.ret(g, x0, y, w, 2, String(i + 1));        // pisada (parte de cima, mais clara)
+            Pintor.ret(g, x0, y + 2, w, 4, 'abcde'[i]);       // espelho do degrau (mais escuro)
+            Pintor.px(g, x0, y, 'e'); Pintor.px(g, x0 + w - 1, y, 'e');
+        }
+        // sombra das paredes do buraco sobre os degraus
+        Pintor.ret(g, 7, 7, 2, N - 14, 'e'); Pintor.ret(g, N - 9, 7, 2, N - 14, 'e');
+        // pedrinhas soltas na borda
+        [[5, 5, 'h'], [N - 6, 6, 'h'], [6, N - 6, 'x'], [N - 5, N - 5, 'x'], [24, 4, 'h']].forEach(([x, y, ch]) => Pintor.px(g, x, y, ch));
+        // a borda usa as cores da parede do próprio mapa
+        const pal = {
+            k: K, s: c.paredeClara, j: c.paredeEscura, h: RD.Arte.tom(c.paredeClara, 0.25), x: c.paredeEscura, e: '#05040a',
+        };
+        for (let i = 0; i < passos; i++) {
+            const f = -0.15 - i * 0.17;
+            pal[String(i + 1)] = RD.Arte.tom(c.pedraClara, f);
+            pal['abcde'[i]] = RD.Arte.tom(c.pedraEscura, f - 0.1);
+        }
+        // uma versão para cada lado: o degrau de cima fica virado para a porta de entrada
+        const girar = {
+            cima: (m) => m,
+            baixo: (m) => m.map((l, y) => l.map((_, x) => m[N - 1 - y][N - 1 - x])),
+            direita: (m) => m.map((l, y) => l.map((_, x) => m[N - 1 - x][y])),
+            esquerda: (m) => m.map((l, y) => l.map((_, x) => m[x][N - 1 - y])),
+        };
+        const base = Pintor.contorno(g);
+        Object.keys(girar).forEach((lado) => {
+            A.mapa('escada_' + id + '_' + lado, Pintor.texto(girar[lado](base)), pal, 2,
+                'Buraco com escada para o próximo cenário (' + id + ', entrada por ' + lado + ')', (ctx, w, h) => {
+                    // escuridão subindo do fundo do buraco (do lado oposto à entrada)
+                    const m = 14;
+                    const ini = { cima: [0, m, 0, h - m], baixo: [0, h - m, 0, m], esquerda: [m, 0, w - m, 0], direita: [w - m, 0, m, 0] }[lado];
+                    const gr = ctx.createLinearGradient(ini[0], ini[1], ini[2], ini[3]);
+                    gr.addColorStop(0, 'rgba(5,4,10,0)');
+                    gr.addColorStop(0.55, 'rgba(5,4,10,0.35)');
+                    gr.addColorStop(1, 'rgba(5,4,10,0.95)');
+                    ctx.fillStyle = gr;
+                    ctx.fillRect(m + 4, m + 4, w - 2 * m - 8, h - 2 * m - 8);
+                    // sombra no chão em volta
+                    ctx.globalCompositeOperation = 'destination-over';
+                    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+                    ctx.fillRect(2, 6, w - 2, h - 4);
+                    ctx.globalCompositeOperation = 'source-over';
+                }, 's');
+        });
+    });
+
+    // ---------------- PLAQUINHA ----------------
+    // Plaquinha pequena de madeira com um papel pregado (o jogo escreve o nome por cima)
+    (function () {
+        const W = 44, H = 28;
+        const g = Pintor.grade(W, H);
+        Pintor.ret(g, 20, 16, 4, 11, 'P');                   // poste
+        Pintor.px(g, 20, 17, 'p'); Pintor.ret(g, 20, 16, 1, 11, 'p');
+        Pintor.ret(g, 18, 26, 8, 2, 'P');                    // base
+        Pintor.ret(g, 1, 1, W - 2, 16, 'm');                 // tábua
+        Pintor.ret(g, 1, 9, W - 2, 1, 'M');
+        Pintor.ret(g, 1, 15, W - 2, 2, 'M');
+        Pintor.ret(g, 3, 2, W - 6, 12, 'f');                 // papel
+        Pintor.ret(g, 3, 2, W - 6, 1, 'F');
+        Pintor.px(g, W - 4, 13, 'r'); Pintor.px(g, W - 5, 13, 'r'); Pintor.px(g, W - 4, 12, 'r');
+        [[4, 3], [W - 5, 3]].forEach(([x, y]) => Pintor.px(g, x, y, 'n'));
+        A.mapa('placa', Pintor.texto(Pintor.contorno(g)),
+            { k: K, m: '#8a5a32', M: '#5e3a1e', P: '#4a2e17', p: '#6b4423', f: '#efe2c0', F: '#fff6dd', r: '#c9b78e', n: '#3a2a1a' },
+            2, 'Plaquinha de madeira (texto escrito pelo jogo)', null, 'm');
+    })();
 
     // Desenha manchas, rachaduras, pedrinhas e outros detalhes no chão.
     // A "semente" muda tudo: cada sala tem uma semente diferente.

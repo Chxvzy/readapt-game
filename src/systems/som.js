@@ -59,6 +59,7 @@ RD.Som = {
                 case 'segredo': [392, 523, 659].forEach((f, i) => this.tom(f, 0.15, 'sine', 0.07, null, i * 0.1)); break;
                 case 'bloqueado': this.tom(150, 0.06, 'square', 0.03); break;
                 case 'portal': this.tom(300, 0.6, 'sine', 0.06, 900); break;
+                case 'passo': this.tom(150, 0.07, 'triangle', 0.05, 110); break;
                 case 'chefe': this.tom(110, 0.5, 'sawtooth', 0.05, 70); break;
                 case 'vitoria': [523, 659, 784, 1046, 784, 1046].forEach((f, i) => this.tom(f, 0.18, 'triangle', 0.07, null, i * 0.14)); break;
                 case 'derrota': [392, 330, 262].forEach((f, i) => this.tom(f, 0.25, 'triangle', 0.06, null, i * 0.22)); break;

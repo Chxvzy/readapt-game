@@ -20,12 +20,12 @@ Se o nome estiver errado, o jogo avisa no console e continua usando o desenho fe
 | `letra_torta` | 48 x 48 | Inimigo Letra Torta |
 | `silaba_quebrada` | 48 x 48 | Inimigo Sílaba Quebrada |
 | `silaba_pedaco` | 30 x 30 | Pedaço da Sílaba Quebrada |
-| `palavra_embaralhada` | 48 x 48 | Inimigo Palavra Embaralhada (fica parado e atira) |
-| `criatura_confusao` | 48 x 48 | Inimigo Criatura da Confusão (muda de lugar) |
-| `chefe_dislexia` | 168 x 168 | Chefe final: a Dislexia (montanha de letras) |
+| `palavra_embaralhada` | 48 x 48 | Inimigo Palavra Embaralhada (livro-monstro que fica parado e atira) |
+| `criatura_confusao` | 48 x 48 | Inimigo Criatura da Confusão (fantasminha que muda de lugar) |
+| `chefe_dislexia` | 168 x 168 | Chefe final: a Dislexia (nuvem de letras roxas) |
 | `npc_bip` | 48 x 48 | Bip, o robô ajudante (primeira sala) |
 | `fragmento_memoria` | 48 x 48 | Fragmento de memória (criatura amigável) |
-| `crianca` | 48 x 48 | A criança (telas de final) |
+| `crianca` | 48 x 48 | A criança (história e telas de final) |
 | `coracao_cheio` | 36 x 32 | Coração cheio (HUD) |
 | `coracao_meio` | 36 x 32 | Meio coração (HUD e item que cura) |
 | `coracao_vazio` | 36 x 32 | Coração vazio (HUD) |
@@ -34,25 +34,28 @@ Se o nome estiver errado, o jogo avisa no console e continua usando o desenho fe
 | `up_scan` | 48 x 48 | Upgrade Escaneamento |
 | `pulso` | 22 x 22 | Tiro do Readapt (gota de energia) |
 | `letra_tiro` | 26 x 26 | Tiro dos inimigos (uma letra) |
-| `bloco_letra` | 64 x 64 | Bloco de letra das atividades |
-| `bloco_silaba` | 120 x 64 | Bloco de sílaba das atividades |
+| `bloco_letra` | 64 x 64 | Bloco de madeira com letra (atividades) |
+| `bloco_silaba` | 120 x 64 | Bloco de madeira com sílaba (atividades) |
 | `livro` | 48 x 48 | Livro brilhante da luta contra o chefe |
-| `portal` | 96 x 96 | Portal para o próximo cenário |
+| `placa` | 88 x 56 | Plaquinha com o nome do próximo cenário |
+| `portal` | 120 x 120 | Portal (só na história) |
 | `porta_aberta` | 96 x 48 | Porta aberta |
 | `porta_trancada` | 96 x 48 | Porta trancada |
 | `piso_letras` | 48 x 48 | Piso do cenário letras (repete pela sala) |
 | `parede_letras` | 48 x 48 | Parede do cenário letras |
 | `bloco_letras` | 48 x 48 | Pedra (obstáculo) do cenário letras |
 | `rachada_letras` | 96 x 48 | Parede rachada (esconde sala secreta) do cenário letras |
+| `escada_letras_cima` (e `_baixo`, `_esquerda`, `_direita`) | 96 x 96 | Buraco com escada para o próximo andar, virado para a porta de entrada |
 | `piso_labirinto` | 48 x 48 | Piso do cenário labirinto (repete pela sala) |
 | `parede_labirinto` | 48 x 48 | Parede do cenário labirinto |
 | `bloco_labirinto` | 48 x 48 | Pedra (obstáculo) do cenário labirinto |
 | `rachada_labirinto` | 96 x 48 | Parede rachada (esconde sala secreta) do cenário labirinto |
+| `escada_labirinto_cima` (e `_baixo`, `_esquerda`, `_direita`) | 96 x 96 | Buraco com escada para o próximo andar |
 | `piso_nucleo` | 48 x 48 | Piso do cenário nucleo (repete pela sala) |
 | `parede_nucleo` | 48 x 48 | Parede do cenário nucleo |
 | `bloco_nucleo` | 48 x 48 | Pedra (obstáculo) do cenário nucleo |
 | `rachada_nucleo` | 96 x 48 | Parede rachada (esconde sala secreta) do cenário nucleo |
-| `papel` | 440 x 330 | Papel do menu principal |
+| `papel` | 440 x 330 | Papel das perguntas do chefe e das telas de final |
 
 ## Observações
 

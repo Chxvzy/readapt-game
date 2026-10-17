@@ -1,6 +1,6 @@
 // Luta final contra a entidade da Dislexia.
-// Ela tem um escudo: o jogador encosta no livro brilhante, responde uma
-// pergunta de leitura e, se acertar, ela fica fraca por alguns segundos.
+// Ela tem um escudo roxo: o jogador encosta no livro brilhante, responde uma
+// pergunta de leitura e, se acertar, o escudo estoura por alguns segundos.
 RD.CenaChefe = class extends Phaser.Scene {
     constructor() { super('Chefe'); }
 
@@ -41,8 +41,8 @@ RD.CenaChefe = class extends Phaser.Scene {
         this.hud.barraChefe(RD.TEXTOS.chefe.nome);
 
         this.chefe = this.physics.add.sprite(RD.CENTRO_X, RD.TOPO + 175, 'chefe_dislexia').setDepth(52).setScale(1.25); // acima da escuridão para ficar sempre visível
-        // hitbox no formato da montanha de letras (a parte de baixo, mais larga)
-        this.chefe.body.setSize(150, 112).setOffset(9, 52);
+        // hitbox no formato da nuvem de letras (o corpo, sem as pontas)
+        this.chefe.body.setSize(150, 112).setOffset(9, 30);
         this.chefe.body.setImmovable(true);
         RD.Efeitos.sombra(this, this.chefe, 3).setDepth(5);
         this.escudo = this.criarEscudo();

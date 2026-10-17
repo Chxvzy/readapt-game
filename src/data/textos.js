@@ -7,21 +7,23 @@
 RD.TEXTOS = {
     // Páginas da história mostradas antes de começar
     historia: [
-        'No futuro, num laboratório de tecnologia educacional, nasce o Readapt: um robô criado para ajudar crianças a ler.',
-        'Ao analisar a mente de uma criança, o sistema encontra um mundo bagunçado. As letras se torcem, as palavras se embaralham e o medo de errar ganha forma.',
-        'A Dislexia virou uma criatura que prende a criança nesse mundo. Readapt é enviado para lá. Ele vai restaurar as palavras e trazer a criança de volta!',
+        'Num laboratório de tecnologia, nasce o Readapt: um robô criado para ajudar crianças a ler sem medo.',
+        'Um dia, o Readapt entra na mente de uma criança e encontra tudo bagunçado. As letras se viram, as palavras se embaralham e o medo de errar vira monstrinhos.',
+        'A mente é como um porão com três andares: o Mundo das Letras, o Labirinto das Palavras e, lá no fundo, o Núcleo da Dislexia. Em cada andar, uma escada leva para baixo.',
+        'No Núcleo, a Dislexia virou uma nuvem gigante de letras que prende a criança. O Readapt vai descer andar por andar, restaurar as criaturas e trazer a criança de volta!',
     ],
 
     // Como jogar (tela inicial)
     comoJogar: [
         'WASD: andar',
-        'Setas: atirar o pulso de restauração',
+        'Setas ou Espaço: atirar o pulso de restauração',
         'E: conversar e ouvir a palavra',
         'Esc: pausar      M: som',
         '',
-        'Limpe as salas para abrir as portas.',
-        'Nas atividades, atire nas letras ou sílabas certas.',
+        'Restaure as criaturas para abrir as portas.',
+        'Nas atividades, atire nos blocos com as letras ou sílabas certas.',
         'Paredes rachadas escondem salas secretas!',
+        'No fim de cada andar, desça a escada.',
     ],
 
     // Personagens que conversam com o Readapt
@@ -30,11 +32,12 @@ RD.TEXTOS = {
             nome: 'Bip',
             textura: 'npc_bip',
             falas: [
-                'Oi, Readapt! Eu sou o Bip, um robô ajudante. Bem-vindo ao Mundo das Letras!',
-                'Use W, A, S e D para andar. Use as setas do teclado para atirar o seu pulso de restauração.',
+                'Oi, Readapt! Eu sou o Bip, seu ajudante. Bem-vindo ao Mundo das Letras, o primeiro andar da mente da criança!',
+                'Use W, A, S e D para andar. Para atirar o pulso de restauração, use as setas ou a barra de Espaço.',
                 'Quando você entra numa sala com criaturas, as portas trancam. Restaure todas para abrir!',
-                'Nas atividades, atire nas letras na ordem certa. Errar faz parte de aprender. Tente com calma!',
+                'Nas atividades, atire nos blocos na ordem certa. Se errar, você perde só meio coração. Tente com calma!',
                 'Viu uma parede rachada? Atire nela. Às vezes ela esconde uma sala secreta!',
+                'No fim de cada andar tem uma escada. Desça por ela para chegar mais perto da criança!',
             ],
         },
         fragmento: {
@@ -52,7 +55,7 @@ RD.TEXTOS = {
     // Dicas escritas no chão da primeira sala
     dicasChao: [
         { texto: 'WASD para andar', col: 4, lin: 8 },
-        { texto: 'Setas para atirar', col: 15, lin: 8 },
+        { texto: 'Setas ou Espaço: atirar', col: 15, lin: 8 },
         { texto: 'E perto do Bip para conversar', col: 10, lin: 10 },
     ],
 
@@ -63,7 +66,7 @@ RD.TEXTOS = {
         limpa: 'Sala limpa! Escolha uma porta',
         secreta: 'Você achou uma sala secreta!',
         amigo: 'Uma criatura amigável! Chegue perto e aperte E',
-        passagem: 'Entre no portal para seguir em frente',
+        passagem: 'Desça a escada para seguir em frente',
         atividadeFeita: 'Atividade concluída!',
     },
 
@@ -81,10 +84,10 @@ RD.TEXTOS = {
     // Chefe final
     chefe: {
         nome: 'A Dislexia',
-        entrada: 'A Dislexia está protegida! Encoste no livro brilhante para ler e enfraquecer ela.',
-        escudo: 'Os tiros não passam pelo escudo. Encoste no livro brilhante!',
-        fraca: 'Ela está fraca! Atire agora!',
-        fase2: 'A Dislexia chamou letras tortas para ajudar!',
+        entrada: 'A Dislexia está protegida por um escudo roxo! Encoste no livro brilhante e responda para estourar o escudo.',
+        escudo: 'Os tiros não passam pelo escudo roxo. Encoste no livro brilhante!',
+        fraca: 'O escudo estourou! Atire agora!',
+        fase2: 'A Dislexia chamou Letras Tortas para ajudar!',
         fase3: 'Ela ficou mais rápida! Falta pouco!',
         bonus: 'Você fez {n} desafio(s) extra(s): a Dislexia começa mais fraca!',
         derrota: 'As letras voltaram para o lugar!',

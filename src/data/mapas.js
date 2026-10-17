@@ -11,7 +11,7 @@
 //   atividade  atividade educativa que tranca as portas até ser concluída
 //   secreta    sala escondida atrás de uma parede rachada (tem um upgrade)
 //   amigo      criatura amigável que conversa e dá um presente
-//   passagem   portal para o próximo cenário
+//   passagem   escada (buraco no chão) que desce para o próximo cenário
 //   chefe      leva para a luta contra a Dislexia
 //
 // Campos extras:
