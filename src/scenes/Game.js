@@ -108,7 +108,7 @@ RD.CenaJogo = class extends Phaser.Scene {
         this.salaLimpa = !!e.limpas[k] || (!temInimigos && !temAtividade);
 
         // Piso, detalhes do chão e sombra das bordas (estilo porão)
-        RD.Efeitos.fundoSala(this, this.cen.id, this.objSala);
+        RD.Efeitos.fundoSala(this, this.cen.id, this.objSala, chave);
         if (this.cen.letrasFundo) {
             const f = this.cen.letrasFundo;
             this.objSala.push(...RD.UI.letrasFlutuando(this, f.quantidade, f.cor, f.alfa, 1));

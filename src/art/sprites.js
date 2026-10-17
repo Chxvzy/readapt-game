@@ -114,6 +114,57 @@ RD.Arte = {
         ctx.closePath();
     }
 
+    // ---------------- PINTOR DE PIXEL ----------------
+    // Ajuda a desenhar sprites maiores (24x24) com formas: elipses, retângulos,
+    // letras pequenas e contorno automático. Cada caractere é uma cor da paleta.
+    const FONTE5 = {
+        A: ['.###.', '#...#', '#...#', '#####', '#...#', '#...#', '#...#'],
+        B: ['####.', '#...#', '#...#', '####.', '#...#', '#...#', '####.'],
+        R: ['####.', '#...#', '#...#', '####.', '#.#..', '#..#.', '#...#'],
+        S: ['.####', '#....', '#....', '.###.', '....#', '....#', '####.'],
+        Z: ['#####', '....#', '...#.', '..#..', '.#...', '#....', '#####'],
+        Q: ['.###.', '#...#', '....#', '...#.', '..#..', '.....', '..#..'],
+        E: ['#####', '#....', '#....', '####.', '#....', '#....', '#####'],
+        D: ['####.', '#...#', '#...#', '#...#', '#...#', '#...#', '####.'],
+        P: ['####.', '#...#', '#...#', '####.', '#....', '#....', '#....'],
+    };
+    const Pintor = {
+        grade(w, h) { return Array.from({ length: h }, () => Array(w).fill('.')); },
+        elipse(g, cx, cy, rx, ry, ch) {
+            for (let y = 0; y < g.length; y++) for (let x = 0; x < g[0].length; x++) {
+                const dx = (x + 0.5 - cx) / rx, dy = (y + 0.5 - cy) / ry;
+                if (dx * dx + dy * dy <= 1) g[y][x] = ch;
+            }
+        },
+        ret(g, x, y, w, h, ch) {
+            for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if (g[j] && i >= 0 && i < g[0].length) g[j][i] = ch;
+        },
+        px(g, x, y, ch) { if (g[y] && x >= 0 && x < g[0].length) g[y][x] = ch; },
+        // letra 5x7; "inclina" desloca as linhas para o lado (letra torta)
+        letra(g, l, x, y, ch, inclina, espelho) {
+            const m = FONTE5[l]; if (!m) return;
+            m.forEach((linha, j) => {
+                const d = inclina ? Math.round((3 - j) * inclina) : 0;
+                for (let i = 0; i < 5; i++) {
+                    const c = espelho ? linha[4 - i] : linha[i];
+                    if (c === '#') Pintor.px(g, x + i + d, y + j, ch);
+                }
+            });
+        },
+        // contorno escuro em volta de tudo que foi pintado
+        contorno(g) {
+            const c = g.map(l => l.slice());
+            for (let y = 0; y < g.length; y++) for (let x = 0; x < g[0].length; x++) {
+                if (g[y][x] !== '.') continue;
+                const viz = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => g[y + dy] && g[y + dy][x + dx] && g[y + dy][x + dx] !== '.');
+                if (viz) c[y][x] = 'k';
+            }
+            return c;
+        },
+        texto(g) { return g.map(l => l.join('')); },
+    };
+    RD.Pintor = Pintor;
+
     // ---------------- READAPT (jogador) ----------------
     // Readapt: cabeça grande de tela (estilo Isaac), olhos e sorriso ciano,
     // antena com luz amarela, corpo azul com um livro no peito.
@@ -158,92 +209,99 @@ RD.Arte = {
     A.mapa('readapt_esquerda', READAPT, PAL_READAPT, 2, 'Jogador olhando para a esquerda', null, 'wbgy');
 
     // ---------------- INIMIGOS ----------------
-    const BLOB = [
-        '................',
-        '.....kkkkkk.....',
-        '...kkrrrrrrkk...',
-        '..krrrrrrrrrrk..',
-        '..krrrrrrrrrrk..',
-        '.krrwwrrrrwwrrk.',
-        '.krrwkrrrrwkrrk.',
-        '.krrrrrrrrrrrrk.',
-        '.krrrrrrrrrrrrk.',
-        '.krrrrrrrrrrrrk.',
-        '.krrrrrrrrrrrrk.',
-        '..krrrrrrrrrrk..',
-        '..krrkrrrrkrrk..',
-        '..krk.krrk.krk..',
-        '...k...kk...k...',
-        '................',
-    ];
+    // Letra Torta: criatura vermelha corcunda com uma letra R torta cravada nas costas,
+    // olhos bravos e boca com dentes.
+    (function () {
+        const g = Pintor.grade(24, 24);
+        Pintor.elipse(g, 12, 15, 9.5, 7.5, 'r');           // corpo
+        Pintor.elipse(g, 11, 11, 7.5, 6, 'r');             // cabeça
+        Pintor.ret(g, 5, 20, 4, 3, 'r'); Pintor.ret(g, 15, 20, 4, 3, 'r'); // pés
+        Pintor.ret(g, 6, 9, 3, 4, 'e'); Pintor.ret(g, 13, 9, 3, 4, 'e');   // olhos
+        Pintor.px(g, 6, 9, 'w'); Pintor.px(g, 13, 9, 'w');
+        Pintor.ret(g, 5, 7, 4, 1, 'e'); Pintor.ret(g, 13, 7, 4, 1, 'e');   // sobrancelhas
+        Pintor.px(g, 8, 8, 'e'); Pintor.px(g, 13, 8, 'e');
+        Pintor.ret(g, 7, 15, 8, 3, 'e');                                    // boca
+        [7, 9, 11, 13].forEach(x => Pintor.px(g, x, 15, 'w'));
+        [8, 10, 12, 14].forEach(x => Pintor.px(g, x, 17, 'w'));
+        Pintor.ret(g, 16, 17, 2, 1, 'd');                                   // manchinha
+        const gc = Pintor.contorno(g);
+        Pintor.letra(gc, 'R', 15, 0, 'y', 0.4);            // a letra torta cravada nas costas
+        for (let y = 0; y < 9; y++) for (let x = 13; x < 24; x++) {   // contorno só por fora da letra
+            if (gc[y][x] === '.' && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => gc[y + dy] && gc[y + dy][x + dx] === 'y')) gc[y][x] = 'k';
+        }
+        A.mapa('letra_torta', Pintor.texto(gc),
+            { k: K, r: '#c8323c', y: '#f0c75e', e: '#14142b', w: '#ffffff', d: '#8e1f2a' },
+            2, 'Inimigo Letra Torta', null, 'r');
+    })();
 
-    A.mapa('letra_torta', BLOB, { k: K, r: '#e63946', w: '#ffffff' }, P,
-        'Inimigo Letra Torta', (ctx) => texto(ctx, 'R', 24, 31, 18, '#ffd23f', -0.4), 'r');
+    // Sílaba Quebrada: corpo laranja partido ao meio (B | A), remendado com faixas
+    (function () {
+        const g = Pintor.grade(24, 24);
+        Pintor.elipse(g, 7.5, 13, 6.5, 9, 'o');
+        Pintor.elipse(g, 16.5, 13, 6.5, 9, 'o');
+        for (let y = 3; y < 23; y++) Pintor.px(g, 11 + ((y >> 1) % 2), y, '.');   // rachadura em zigue-zague
+        for (let y = 3; y < 23; y++) Pintor.px(g, 12 - ((y >> 1) % 2), y, '.');
+        Pintor.ret(g, 4, 8, 3, 3, 'e'); Pintor.px(g, 4, 8, 'w');                 // um olho de cada lado
+        Pintor.ret(g, 17, 8, 3, 3, 'e'); Pintor.px(g, 17, 8, 'w');
+        Pintor.letra(g, 'B', 3, 12, 'c');
+        Pintor.letra(g, 'A', 15, 12, 'c');
+        Pintor.ret(g, 9, 6, 6, 2, 't'); Pintor.ret(g, 9, 18, 6, 2, 't');        // faixas de remendo
+        Pintor.ret(g, 4, 22, 3, 2, 'o'); Pintor.ret(g, 17, 22, 3, 2, 'o');
+        A.mapa('silaba_quebrada', Pintor.texto(Pintor.contorno(g)),
+            { k: K, o: '#e07a1f', e: '#14142b', w: '#ffffff', c: '#fff1d6', t: '#d9c9a0' },
+            2, 'Inimigo Sílaba Quebrada', null, 'ot');
+    })();
 
-    A.mapa('silaba_quebrada', BLOB, { k: K, r: '#ff8c1a', w: '#ffffff' }, P,
-        'Inimigo Sílaba Quebrada', (ctx) => {
-            texto(ctx, 'BA', 24, 31, 15, '#ffffff');
-            ctx.strokeStyle = K;
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(25, 7); ctx.lineTo(22, 15); ctx.lineTo(26, 23); ctx.lineTo(22, 33); ctx.lineTo(25, 42);
-            ctx.stroke();
-        }, 'r');
+    // Pedaço da Sílaba: meia criatura, com um olho e a letra
+    (function () {
+        const g = Pintor.grade(15, 15);
+        Pintor.elipse(g, 7.5, 8, 6.5, 6.5, 'o');
+        Pintor.ret(g, 10, 1, 4, 14, '.');
+        for (let y = 2; y < 14; y++) Pintor.px(g, 10 - ((y >> 1) % 2), y, '.');
+        Pintor.ret(g, 3, 4, 3, 3, 'e'); Pintor.px(g, 3, 4, 'w');
+        Pintor.ret(g, 3, 9, 4, 1, 'c'); Pintor.ret(g, 4, 10, 2, 2, 'c');
+        A.mapa('silaba_pedaco', Pintor.texto(Pintor.contorno(g)),
+            { k: K, o: '#f0a040', e: '#14142b', w: '#ffffff', c: '#fff1d6' },
+            2, 'Pedaço da Sílaba Quebrada', null, 'o');
+    })();
 
-    A.mapa('silaba_pedaco', [
-        '...kkkk...',
-        '.kkrrrrkk.',
-        '.krrrrrrk.',
-        'krrwrrwrrk',
-        'krrkrrkrrk',
-        'krrrrrrrrk',
-        'krrrrrrrrk',
-        '.krrrrrrk.',
-        '.kk.kk.kk.',
-        '..........',
-    ], { k: K, r: '#ffb347', w: '#ffffff' }, P, 'Pedaço da Sílaba Quebrada', null, 'r');
+    // Palavra Embaralhada: um livro-monstro aberto, com olhos nas páginas e boca de dentes
+    (function () {
+        const g = Pintor.grade(24, 24);
+        Pintor.ret(g, 1, 4, 22, 16, 'g');                   // capa
+        Pintor.ret(g, 3, 5, 8, 13, 'p'); Pintor.ret(g, 13, 5, 8, 13, 'p'); // páginas
+        Pintor.ret(g, 11, 4, 2, 16, 'b');                   // lombada
+        [[4, 6], [6, 6], [8, 6], [14, 6], [17, 6], [19, 6], [4, 15], [7, 15], [15, 15], [18, 15]].forEach(([x, y]) => Pintor.ret(g, x, y, 2, 1, 'l'));
+        Pintor.ret(g, 5, 8, 3, 3, 'e'); Pintor.px(g, 5, 8, 'w');      // olhos
+        Pintor.ret(g, 16, 8, 3, 3, 'e'); Pintor.px(g, 16, 8, 'w');
+        Pintor.ret(g, 4, 7, 4, 1, 'e'); Pintor.ret(g, 16, 7, 4, 1, 'e');
+        Pintor.ret(g, 4, 12, 16, 3, 'e');                              // boca
+        for (let x = 4; x < 20; x += 2) { Pintor.px(g, x, 12, 'w'); Pintor.px(g, x + 1, 14, 'w'); }
+        Pintor.ret(g, 16, 20, 2, 3, 'r');                              // fitinha marcadora
+        Pintor.px(g, 16, 23, 'r');
+        A.mapa('palavra_embaralhada', Pintor.texto(Pintor.contorno(g)),
+            { k: K, g: '#2f6b46', b: '#1f4a30', p: '#efe6cf', l: '#8a8070', e: '#14142b', w: '#ffffff', r: '#c8323c' },
+            2, 'Inimigo Palavra Embaralhada (livro que atira letras)', null, 'gp');
+    })();
 
-    A.mapa('palavra_embaralhada', [
-        '................',
-        '..kkkkkkkkkkkk..',
-        '..kggggggggggk..',
-        '..kgwwwwwwwwgk..',
-        '..kgwwwwwwwwgk..',
-        '..kgwwwwwwwwgk..',
-        '..kggggggggggk..',
-        '..kgrrggggrrgk..',
-        '..kgrkggggrkgk..',
-        '..kggggggggggk..',
-        '..kggggggggggk..',
-        '..kkkkkkkkkkkk..',
-        '.....kkddkk.....',
-        '.....kddddk.....',
-        '......kkkk......',
-        '................',
-    ], { k: K, g: '#3fbf5f', w: '#f4fff6', r: '#e63946', d: '#2a7a3e' }, P,
-    'Inimigo Palavra Embaralhada (fica parado e atira)',
-    (ctx) => texto(ctx, 'ATOG', 24, 13, 9, K, 0, false), 'g');
-
-    A.mapa('criatura_confusao', [
-        '................',
-        '......kkkk......',
-        '....kkttttkk....',
-        '...kttttttttk...',
-        '..kttttttttttk..',
-        '..kttwwttwwttk..',
-        '..kttwkttwkttk..',
-        '..kttttttttttk..',
-        '.kttttttttttttk.',
-        '.kttttttttttttk.',
-        '.kttttttttttttk.',
-        '.kttttttttttttk.',
-        '.kttkttkttkttk..',
-        '.kk.kk.kk.kk....',
-        '................',
-        '................',
-    ], { k: K, t: '#f2f2ff', w: '#7a3cff' }, P,
-    'Inimigo Criatura da Confusão (muda de lugar)',
-    (ctx) => texto(ctx, '?', 24, 30, 18, '#7a3cff', 0.2), 't');
+    // Criatura da Confusão: fantasminha pálido, olhos de tamanhos diferentes,
+    // um ponto de interrogação brilhando na barriga e a barra rasgada
+    (function () {
+        const g = Pintor.grade(24, 24);
+        Pintor.elipse(g, 12, 10, 9, 8.5, 't');
+        Pintor.ret(g, 3, 10, 18, 9, 't');
+        for (let x = 3; x < 21; x++) {                       // barra rasgada
+            const alt = [3, 2, 1, 2, 3, 1][x % 6];
+            Pintor.ret(g, x, 19, 1, alt, 't');
+        }
+        Pintor.ret(g, 6, 6, 4, 5, 'e'); Pintor.px(g, 6, 6, 'w');      // olho grande
+        Pintor.ret(g, 15, 8, 2, 3, 'e'); Pintor.px(g, 15, 8, 'w');    // olho pequeno
+        Pintor.ret(g, 9, 13, 2, 1, 'e'); Pintor.ret(g, 11, 14, 2, 1, 'e'); Pintor.ret(g, 13, 13, 2, 1, 'e'); // boca torta
+        Pintor.letra(g, 'Q', 13, 13, 'q');                   // "?" na barriga
+        A.mapa('criatura_confusao', Pintor.texto(Pintor.contorno(g)),
+            { k: K, t: '#d9d4f2', e: '#14142b', w: '#ffffff', q: '#8f5cff' },
+            2, 'Inimigo Criatura da Confusão (fantasma que muda de lugar)', null, 't');
+    })();
 
     // ---------------- CHEFE ----------------
     // A Dislexia: uma montanha de letras embaralhadas (algumas viradas ao contrário),
@@ -486,27 +544,24 @@ RD.Arte = {
     }, true);
 
     // ---------------- OBJETOS ----------------
-    A.add('bloco_letra', 64, 64, 'Bloco de letra das atividades', (ctx) => {
-        ctx.fillStyle = K;
-        retArredondado(ctx, 0, 4, 64, 60, 12); ctx.fill();
-        ctx.fillStyle = '#d9c9a0';
-        retArredondado(ctx, 3, 8, 58, 53, 10); ctx.fill();
-        ctx.fillStyle = '#fff4d6';
-        retArredondado(ctx, 3, 3, 58, 50, 10); ctx.fill();
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(10, 8, 12, 4);
-    });
-
-    A.add('bloco_silaba', 120, 64, 'Bloco de sílaba das atividades', (ctx) => {
-        ctx.fillStyle = K;
-        retArredondado(ctx, 0, 4, 120, 60, 12); ctx.fill();
-        ctx.fillStyle = '#d9c9a0';
-        retArredondado(ctx, 3, 8, 114, 53, 10); ctx.fill();
-        ctx.fillStyle = '#fff4d6';
-        retArredondado(ctx, 3, 3, 114, 50, 10); ctx.fill();
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(10, 8, 20, 4);
-    });
+    // Blocos das atividades: peças de madeira antigas com a face de pergaminho
+    // (a letra é escrita por cima pelo jogo, bem grande e escura)
+    function pecaMadeira(largura) {
+        const W = largura / 2, H = 32;
+        const g = Pintor.grade(W, H);
+        Pintor.ret(g, 1, 3, W - 2, H - 4, 'm');              // corpo de madeira
+        Pintor.ret(g, 1, H - 7, W - 2, 6, 'M');              // lateral de baixo (mais escura)
+        Pintor.ret(g, 3, 4, W - 6, H - 12, 'f');             // face de pergaminho
+        Pintor.ret(g, 3, 4, W - 6, 1, 'F');                  // brilho no alto da face
+        const r = A.aleatorio(largura);
+        for (let n = 0; n < W / 2; n++) Pintor.px(g, 4 + Math.floor(r() * (W - 8)), 6 + Math.floor(r() * (H - 15)), 'r'); // riscos
+        [[2, 4], [W - 3, 4], [2, H - 9], [W - 3, H - 9]].forEach(([x, y]) => Pintor.px(g, x, y, 'n')); // preguinhos
+        for (let x = 2; x < W - 2; x += 5) Pintor.px(g, x, H - 4, 'v');                                // veios da madeira
+        return Pintor.texto(Pintor.contorno(g));
+    }
+    const PAL_PECA = { k: K, m: '#8a5a32', M: '#5e3a1e', f: '#efe2c0', F: '#fff6dd', r: '#d6c59c', n: '#3a2a1a', v: '#4a2e17' };
+    A.mapa('bloco_letra', pecaMadeira(64), PAL_PECA, 2, 'Bloco de letra das atividades', null, 'm');
+    A.mapa('bloco_silaba', pecaMadeira(120), PAL_PECA, 2, 'Bloco de sílaba das atividades', null, 'm');
 
     A.add('livro', 48, 48, 'Livro brilhante da luta contra o chefe', (ctx) => {
         const g = ctx.createRadialGradient(24, 24, 4, 24, 24, 24);
@@ -638,19 +693,19 @@ RD.Arte = {
         letras: {
             piso: '#2c3452', pisoEscuro: '#232a44', pisoClaro: '#38416a',
             parede: '#1f2645', paredeClara: '#36427a', paredeEscura: '#111629',
-            pedra: '#5a6585', pedraClara: '#7c87a8', pedraEscura: '#3a425c', letraPedra: '#c9a227', letra: 'A',
+            pedra: '#5a6585', pedraClara: '#7c87a8', pedraEscura: '#3a425c', letraPedra: '#353d57', letra: 'A',
             mancha: 'rgba(10,12,30,0.35)', tinta: 0x7fd8ff,
         },
         labirinto: {
             piso: '#2f2539', pisoEscuro: '#261d30', pisoClaro: '#3c3049',
             parede: '#3a2350', paredeClara: '#5a3a78', paredeEscura: '#1f122b',
-            pedra: '#24766f', pedraClara: '#36a094', pedraEscura: '#164944', letraPedra: '#a8fff2', letra: 'S',
+            pedra: '#24766f', pedraClara: '#36a094', pedraEscura: '#164944', letraPedra: '#0f3a36', letra: 'S',
             mancha: 'rgba(15,40,35,0.35)', tinta: 0x5fe0c8,
         },
         nucleo: {
             piso: '#1d1218', pisoEscuro: '#150c11', pisoClaro: '#2a1820',
             parede: '#3b0e19', paredeClara: '#5e1b2c', paredeEscura: '#1e050b',
-            pedra: '#45265e', pedraClara: '#653a85', pedraEscura: '#2a163a', letraPedra: '#ff4d6d', letra: '?',
+            pedra: '#45265e', pedraClara: '#653a85', pedraEscura: '#2a163a', letraPedra: '#ff4d6d', letra: 'E',
             mancha: 'rgba(60,0,15,0.4)', tinta: 0xff4d6d,
         },
     };
@@ -693,31 +748,31 @@ RD.Arte = {
 
         A.add('parede_' + id, 48, 48, 'Parede do cenário ' + id, (ctx) => tijolos(ctx, c, 48, 201 + n));
 
-        A.add('bloco_' + id, 48, 48, 'Pedra (obstáculo) do cenário ' + id, (ctx) => {
-            // pedra irregular com sombreado
-            ctx.fillStyle = 'rgba(0,0,0,0.35)';
-            ctx.beginPath(); ctx.ellipse(25, 41, 21, 6, 0, 0, Math.PI * 2); ctx.fill();
-            const forma = [[6, 18], [12, 7], [24, 3], [37, 6], [44, 17], [43, 33], [34, 41], [14, 41], [5, 32]];
-            const desenhar = (cor, enc) => {
-                ctx.fillStyle = cor;
-                ctx.beginPath();
-                forma.forEach(([x, y], i) => {
-                    const px = 24 + (x - 24) * enc, py = 22 + (y - 22) * enc;
-                    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-                });
-                ctx.closePath(); ctx.fill();
-            };
-            desenhar(K, 1.06);
-            desenhar(c.pedraEscura, 1);
-            ctx.save();
-            ctx.translate(-2, -3);
-            desenhar(c.pedra, 0.86);
-            ctx.restore();
-            ctx.fillStyle = c.pedraClara;
-            ctx.fillRect(14, 10, 10, 3);
-            ctx.fillRect(11, 13, 4, 6);
-            texto(ctx, c.letra, 23, 22, 18, c.letraPedra, -0.15, false);
-        });
+        // Pedra (obstáculo): rocha com volume, rachaduras e uma letra gravada.
+        // No Labirinto tem musgo; no Núcleo a letra brilha em vermelho.
+        (function () {
+            const g = Pintor.grade(24, 24);
+            Pintor.elipse(g, 12, 14, 10.5, 8.5, 's');
+            Pintor.elipse(g, 9, 10, 7, 6, 's');
+            Pintor.elipse(g, 16, 11, 5.5, 5, 's');
+            Pintor.letra(g, c.letra === '?' ? 'Q' : c.letra, 9, 9, 'L');
+            Pintor.ret(g, 4, 15, 1, 3, 'x'); Pintor.px(g, 5, 18, 'x'); Pintor.px(g, 6, 19, 'x');   // rachaduras
+            Pintor.px(g, 18, 8, 'x'); Pintor.px(g, 19, 9, 'x'); Pintor.px(g, 19, 10, 'x');
+            Pintor.ret(g, 6, 6, 3, 1, 'h'); Pintor.ret(g, 5, 7, 1, 2, 'h');                         // brilho
+            if (id === 'labirinto') {
+                [[3, 12], [4, 11], [5, 11], [14, 6], [15, 6], [16, 6], [17, 7], [12, 20], [13, 20]].forEach(([x, y]) => Pintor.px(g, x, y, 'u'));
+            }
+            const mapa = Pintor.texto(Pintor.contorno(g));
+            A.mapa('bloco_' + id, mapa, {
+                k: K, s: c.pedra, h: c.pedraClara, x: c.pedraEscura, L: c.letraPedra, u: '#4f9a4a',
+            }, 2, 'Pedra (obstáculo) do cenário ' + id, (ctx) => {
+                // sombra no chão por baixo da pedra
+                ctx.globalCompositeOperation = 'destination-over';
+                ctx.fillStyle = 'rgba(0,0,0,0.4)';
+                ctx.beginPath(); ctx.ellipse(24, 42, 21, 5, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.globalCompositeOperation = 'source-over';
+            }, 's');
+        })();
 
         A.add('rachada_' + id, 96, 48, 'Parede rachada (esconde sala secreta) do cenário ' + id, (ctx) => {
             tijolos(ctx, c, 96, 301 + n);
@@ -735,35 +790,104 @@ RD.Arte = {
             ctx.stroke();
         });
 
-        // Detalhes do chão da sala inteira: manchas, rachaduras e pedrinhas (não trocável)
+        // Detalhes do chão (versão padrão do cenário; cada sala gera a sua no jogo)
         A.add('detalhes_' + id, RD.LARGURA, RD.LINHAS * RD.TILE, 'Detalhes do chão', (ctx, w, h) => {
-            const r = A.aleatorio(401 + n);
-            for (let i = 0; i < 14; i++) {
-                const x = 60 + r() * (w - 120), y = 60 + r() * (h - 120);
-                ctx.fillStyle = c.mancha;
-                for (let k = 0; k < 6; k++) {
-                    ctx.beginPath();
-                    ctx.ellipse(x + (r() - 0.5) * 50, y + (r() - 0.5) * 30, 12 + r() * 26, 8 + r() * 16, r() * 3, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            }
-            ctx.strokeStyle = 'rgba(0,0,0,0.45)';
-            ctx.lineWidth = 3;
-            for (let i = 0; i < 9; i++) {
-                let x = 60 + r() * (w - 120), y = 60 + r() * (h - 120);
-                ctx.beginPath(); ctx.moveTo(x, y);
-                for (let k = 0; k < 4; k++) { x += (r() - 0.5) * 50; y += (r() - 0.5) * 30; ctx.lineTo(Math.round(x / 3) * 3, Math.round(y / 3) * 3); }
-                ctx.stroke();
-            }
-            for (let i = 0; i < 40; i++) {
-                const x = Math.round((60 + r() * (w - 120)) / 3) * 3, y = Math.round((60 + r() * (h - 120)) / 3) * 3;
-                ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                ctx.fillRect(x, y + 3, 6, 3);
-                ctx.fillStyle = c.pisoClaro;
-                ctx.fillRect(x, y, 6, 3);
-            }
+            RD.Arte.desenharDetalhes(ctx, w, h, id, 401 + n);
         }, true);
     });
+
+    // Desenha manchas, rachaduras, pedrinhas e outros detalhes no chão.
+    // A "semente" muda tudo: cada sala tem uma semente diferente.
+    RD.Arte.desenharDetalhes = function (ctx, w, h, id, semente) {
+        const c = RD.CORES_CENARIO[id];
+        const r = A.aleatorio(semente);
+        const dentro = (m) => [m + r() * (w - 2 * m), m + r() * (h - 2 * m)];
+        // manchas
+        const nManchas = 6 + Math.floor(r() * 10);
+        for (let i = 0; i < nManchas; i++) {
+            const [x, y] = dentro(70);
+            ctx.fillStyle = c.mancha;
+            const partes = 3 + Math.floor(r() * 5);
+            for (let k = 0; k < partes; k++) {
+                ctx.beginPath();
+                ctx.ellipse(x + (r() - 0.5) * 60, y + (r() - 0.5) * 36, 10 + r() * 28, 7 + r() * 18, r() * 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        // rachaduras (às vezes uma bem grande com galhos)
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+        ctx.lineWidth = 3;
+        const nRach = 3 + Math.floor(r() * 8);
+        for (let i = 0; i < nRach; i++) {
+            let [x, y] = dentro(70);
+            const passos = r() < 0.25 ? 9 : 3 + Math.floor(r() * 3);
+            ctx.beginPath(); ctx.moveTo(x, y);
+            for (let k = 0; k < passos; k++) {
+                x += (r() - 0.5) * 60; y += (r() - 0.5) * 36;
+                ctx.lineTo(Math.round(x / 3) * 3, Math.round(y / 3) * 3);
+                if (r() < 0.3) { ctx.moveTo(x, y); ctx.lineTo(x + (r() - 0.5) * 30, y + (r() - 0.5) * 20); ctx.moveTo(x, y); }
+            }
+            ctx.stroke();
+        }
+        // brilho vermelho dentro das rachaduras no Núcleo
+        if (id === 'nucleo') {
+            ctx.strokeStyle = 'rgba(255,60,90,0.25)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 4; i++) {
+                let [x, y] = dentro(80);
+                ctx.beginPath(); ctx.moveTo(x, y);
+                for (let k = 0; k < 4; k++) { x += (r() - 0.5) * 50; y += (r() - 0.5) * 30; ctx.lineTo(x, y); }
+                ctx.stroke();
+            }
+        }
+        // musgo no Labirinto
+        if (id === 'labirinto') {
+            for (let i = 0; i < 6; i++) {
+                const [x, y] = dentro(60);
+                ctx.fillStyle = 'rgba(70,140,70,0.18)';
+                for (let k = 0; k < 8; k++) ctx.fillRect(Math.round((x + (r() - 0.5) * 40) / 3) * 3, Math.round((y + (r() - 0.5) * 24) / 3) * 3, 6, 3);
+            }
+        }
+        // letras arranhadas no chão
+        const nLetras = Math.floor(r() * 4);
+        ctx.font = '700 26px ' + RD.FONTE;
+        ctx.fillStyle = 'rgba(0,0,0,0.22)';
+        for (let i = 0; i < nLetras; i++) {
+            const [x, y] = dentro(90);
+            ctx.save(); ctx.translate(x, y); ctx.rotate((r() - 0.5) * 1.2);
+            ctx.fillText('ABDEPRSZ'[Math.floor(r() * 8)], 0, 0);
+            ctx.restore();
+        }
+        // teias de aranha nos cantos (algumas salas)
+        [[48, 48, 1, 1], [w - 48, 48, -1, 1], [48, h - 48, 1, -1], [w - 48, h - 48, -1, -1]].forEach(([x, y, sx, sy]) => {
+            if (r() > 0.35) return;
+            ctx.strokeStyle = 'rgba(220,220,235,0.18)';
+            ctx.lineWidth = 1;
+            for (let k = 0; k < 5; k++) {
+                const a = (k / 4) * (Math.PI / 2);
+                ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + sx * Math.cos(a) * 60, y + sy * Math.sin(a) * 60); ctx.stroke();
+            }
+            for (let raio = 15; raio <= 55; raio += 14) {
+                ctx.beginPath();
+                for (let k = 0; k <= 4; k++) {
+                    const a = (k / 4) * (Math.PI / 2);
+                    const px = x + sx * Math.cos(a) * raio, py = y + sy * Math.sin(a) * raio;
+                    if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                }
+                ctx.stroke();
+            }
+        });
+        // pedrinhas
+        const nPedras = 20 + Math.floor(r() * 35);
+        for (let i = 0; i < nPedras; i++) {
+            const [px, py] = dentro(60);
+            const x = Math.round(px / 3) * 3, y = Math.round(py / 3) * 3;
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(x, y + 3, 6, 3);
+            ctx.fillStyle = c.pisoClaro;
+            ctx.fillRect(x, y, 6, 3);
+        }
+    };
 
     // Sombra das paredes no chão + cantos escurecidos (como no Isaac), não trocável
     A.add('vinheta', RD.LARGURA, RD.LINHAS * RD.TILE, 'Sombra das bordas da sala', (ctx, w, h) => {

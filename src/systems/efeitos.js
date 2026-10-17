@@ -65,12 +65,27 @@ RD.Efeitos = {
         return { brilho, vortice, aro, faiscas };
     },
 
-    // Piso, detalhes do chão e sombra das bordas de uma sala
-    fundoSala(cena, idCenario, lista) {
+    // Piso, detalhes do chão e sombra das bordas de uma sala.
+    // Com "chaveSala", cada sala ganha rachaduras/manchas diferentes.
+    fundoSala(cena, idCenario, lista, chaveSala) {
         const altura = RD.LINHAS * RD.TILE;
+        let detalhes = 'detalhes_' + idCenario;
+        let semente = 0;
+        if (chaveSala) {
+            const nome = idCenario + '|' + chaveSala;
+            for (let i = 0; i < nome.length; i++) semente = (semente * 31 + nome.charCodeAt(i)) >>> 0;
+            detalhes = 'detalhes_' + idCenario + '_' + chaveSala.replace(/[^a-z0-9]/gi, '_');
+            if (!cena.textures.exists(detalhes)) {
+                const t = cena.textures.createCanvas(detalhes, RD.LARGURA, altura);
+                RD.Arte.desenharDetalhes(t.getContext(), RD.LARGURA, altura, idCenario, semente || 1);
+                t.refresh();
+            }
+        }
+        const piso = cena.add.tileSprite(RD.CENTRO_X, RD.CENTRO_Y, RD.LARGURA, altura, 'piso_' + idCenario).setDepth(0);
+        if (chaveSala) { piso.tilePositionX = (semente % 4) * 48; piso.tilePositionY = ((semente >> 3) % 4) * 48; }
         const objs = [
-            cena.add.tileSprite(RD.CENTRO_X, RD.CENTRO_Y, RD.LARGURA, altura, 'piso_' + idCenario).setDepth(0),
-            cena.add.image(RD.CENTRO_X, RD.CENTRO_Y, 'detalhes_' + idCenario).setDepth(0.5),
+            piso,
+            cena.add.image(RD.CENTRO_X, RD.CENTRO_Y, detalhes).setDepth(0.5),
             cena.add.image(RD.CENTRO_X, RD.CENTRO_Y, 'vinheta').setDepth(45),
         ];
         if (lista) lista.push(...objs);
