@@ -70,13 +70,66 @@ RD.Som = {
     },
 
     // Lê uma palavra em voz alta (se o navegador tiver voz em português)
+    // ------------------------------------------------------------------
+    // VOZ que lê as palavras
+    // 1) Se existir uma gravação em assets/vozes/<palavra>.mp3, ela é usada
+    //    (ex.: assets/vozes/gato.mp3). Fica com voz de gente de verdade.
+    // 2) Se não existir, o navegador lê com a voz mais natural que tiver
+    //    em português do Brasil (as vozes "Natural" do Edge e a do Google
+    //    no Chrome são as melhores).
+    // ------------------------------------------------------------------
+    vozesBoas: [
+        'francisca', 'thalita', 'antonio', 'natural', 'online',   // Edge (vozes neurais)
+        'google português do brasil', 'google portugues do brasil', // Chrome
+        'luciana', 'felipe',                                        // Mac / iPhone
+        'maria', 'daniel',                                          // Windows (mais robóticas)
+    ],
+
+    escolherVoz() {
+        if (!('speechSynthesis' in window)) return null;
+        const todas = window.speechSynthesis.getVoices();
+        const pt = todas.filter(v => /^pt[-_]BR/i.test(v.lang));
+        const lista = pt.length ? pt : todas.filter(v => /^pt/i.test(v.lang));
+        if (!lista.length) return null;
+        const nota = (v) => {
+            const n = v.name.toLowerCase();
+            const i = this.vozesBoas.findIndex(p => n.includes(p));
+            let pontos = i < 0 ? 100 : i;
+            if (n.includes('natural') || n.includes('online')) pontos -= 50;   // vozes neurais primeiro
+            return pontos;
+        };
+        lista.sort((x, y) => nota(x) - nota(y));
+        return lista[0];
+    },
+
     falar(texto) {
-        if (!this.ligado || !('speechSynthesis' in window)) return false;
+        if (!this.ligado || !texto) return false;
+        const nome = texto.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_');
+        // gravação de verdade, se existir
+        if (this.gravacoes[nome] !== false) {
+            if (this.audio) { this.audio.pause(); }
+            const a = new Audio('assets/vozes/' + nome + '.mp3');
+            this.audio = a;
+            a.onerror = () => { this.gravacoes[nome] = false; this.falarSintetizado(texto); };
+            a.play().then(() => { this.gravacoes[nome] = true; }).catch(() => {});
+            return true;
+        }
+        return this.falarSintetizado(texto);
+    },
+    gravacoes: {},
+
+    falarSintetizado(texto) {
+        if (!('speechSynthesis' in window)) return false;
         try {
             window.speechSynthesis.cancel();
             const fala = new SpeechSynthesisUtterance(texto.toLowerCase());
-            fala.lang = 'pt-BR';
-            fala.rate = 0.8;
+            if (!this.voz) this.voz = this.escolherVoz();
+            if (this.voz) fala.voice = this.voz;
+            fala.lang = this.voz ? this.voz.lang : 'pt-BR';
+            // vozes naturais já falam devagar e claro; as antigas ficam melhores um pouco mais lentas
+            const natural = this.voz && /natural|online|google/i.test(this.voz.name);
+            fala.rate = natural ? 0.9 : 0.8;
+            fala.pitch = 1.05;
             window.speechSynthesis.speak(fala);
             return true;
         } catch (e) {
@@ -86,3 +139,8 @@ RD.Som = {
 };
 
 RD.Som.iniciar();
+// a lista de vozes chega depois que a página abre
+if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = () => { RD.Som.voz = RD.Som.escolherVoz(); };
+    RD.Som.voz = RD.Som.escolherVoz();
+}

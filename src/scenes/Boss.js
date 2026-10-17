@@ -33,6 +33,14 @@ RD.CenaChefe = class extends Phaser.Scene {
             }
         }
 
+        // A porta por onde o Readapt entrou se fecha atrás dele: não tem como fugir
+        const porta = this.add.image(RD.CENTRO_X, RD.ALTURA - RD.TILE / 2, 'porta_chefe').setAngle(180).setDepth(46);
+        this.time.delayedCall(700, () => {
+            porta.setTexture('porta_chefe_trancada');
+            RD.Som.tocar('chefe');
+            this.cameras.main.shake(220, 0.006);
+        });
+
         // Personagens
         this.jogador = RD.Jogador.criar(this, RD.CENTRO_X, RD.ALTURA - 110);
         this.gInimigos = this.physics.add.group();
@@ -178,7 +186,9 @@ RD.CenaChefe = class extends Phaser.Scene {
         const fundo = this.add.rectangle(RD.CENTRO_X, RD.CENTRO_Y, RD.LARGURA, RD.LINHAS * RD.TILE, 0x0d1024, 0.8);
         const painel = this.add.image(RD.CENTRO_X, RD.CENTRO_Y, 'papel').setDisplaySize(800, 470);
         const titulo = this.add.text(RD.CENTRO_X, RD.CENTRO_Y - 175, q.pergunta, RD.UI.estilo(28, '#a3241b', { fontStyle: '700' })).setOrigin(0.5);
-        const dica = this.add.text(RD.CENTRO_X, RD.CENTRO_Y - 100, q.dica, RD.UI.estilo(64)).setOrigin(0.5);
+        const dica = q.dica
+            ? this.add.text(RD.CENTRO_X, RD.CENTRO_Y - 100, q.dica, RD.UI.estilo(64)).setOrigin(0.5)
+            : this.add.text(RD.CENTRO_X, RD.CENTRO_Y - 110, 'Aperte E para ouvir a palavra', RD.UI.estilo(22, '#6b5a3e', { fontStyle: '600' })).setOrigin(0.5);
         c.add([fundo, painel, titulo, dica]);
         if (q.texto) c.add(this.add.text(RD.CENTRO_X, RD.CENTRO_Y - 20, q.texto, RD.UI.estilo(40, '#3b2f1e', { fontStyle: '700' })).setOrigin(0.5));
 

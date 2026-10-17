@@ -10,6 +10,8 @@ RD.ALTURA = RD.TOPO + RD.LINHAS * RD.TILE; // 80 + 576 = 656
 RD.PIXEL = 3;              // cada "pixel" da arte vira 3x3 na tela
 
 RD.FONTE = 'Lexend, OpenDyslexic, Verdana, Arial, sans-serif';
+// Letras dos objetos do mapa (pedras e letras riscadas no chão)
+RD.FONTE_DISLEXIA = 'OpenDyslexic, Lexend, Verdana, Arial, sans-serif';
 
 // Centro da área da sala (abaixo da HUD)
 RD.CENTRO_X = RD.LARGURA / 2;

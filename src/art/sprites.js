@@ -127,6 +127,11 @@ RD.Arte = {
         E: ['#####', '#....', '#....', '####.', '#....', '#....', '#####'],
         D: ['####.', '#...#', '#...#', '#...#', '#...#', '#...#', '####.'],
         P: ['####.', '#...#', '#...#', '####.', '#....', '#....', '#....'],
+        d: ['....#', '....#', '.####', '#...#', '#...#', '#...#', '.####'],
+        b: ['#....', '#....', '####.', '#...#', '#...#', '#...#', '####.'],
+        // versões menores (4 x 6)
+        dp: ['...#', '...#', '.###', '#..#', '#..#', '.###'],
+        bp: ['#...', '#...', '###.', '#..#', '#..#', '###.'],
     };
     const Pintor = {
         grade(w, h) { return Array.from({ length: h }, () => Array(w).fill('.')); },
@@ -145,8 +150,9 @@ RD.Arte = {
             const m = FONTE5[l]; if (!m) return;
             m.forEach((linha, j) => {
                 const d = inclina ? Math.round((3 - j) * inclina) : 0;
-                for (let i = 0; i < 5; i++) {
-                    const c = espelho ? linha[4 - i] : linha[i];
+                const n = linha.length;
+                for (let i = 0; i < n; i++) {
+                    const c = espelho ? linha[n - 1 - i] : linha[i];
                     if (c === '#') Pintor.px(g, x + i + d, y + j, ch);
                 }
             });
@@ -164,6 +170,8 @@ RD.Arte = {
         texto(g) { return g.map(l => l.join('')); },
     };
     RD.Pintor = Pintor;
+    // texturas feitas em tamanho dobrado (para ficarem nítidas) e a escala para mostrá-las
+    RD.Arte.escalas = RD.Arte.escalas || {};
 
     // ---------------- READAPT (jogador) ----------------
     // Readapt: cabeça grande de tela (estilo Isaac), olhos e sorriso ciano,
@@ -234,7 +242,7 @@ RD.Arte = {
             2, 'Inimigo Letra Torta', null, 'r');
     })();
 
-    // Sílaba Quebrada: corpo laranja partido ao meio (B | A), remendado com faixas
+    // Sílaba Quebrada: corpo laranja partido ao meio (d | b), remendado com faixas
     (function () {
         const g = Pintor.grade(24, 24);
         Pintor.elipse(g, 7.5, 13, 6.5, 9, 'o');
@@ -243,13 +251,14 @@ RD.Arte = {
         for (let y = 3; y < 23; y++) Pintor.px(g, 12 - ((y >> 1) % 2), y, '.');
         Pintor.ret(g, 4, 8, 3, 3, 'e'); Pintor.px(g, 4, 8, 'w');                 // um olho de cada lado
         Pintor.ret(g, 17, 8, 3, 3, 'e'); Pintor.px(g, 17, 8, 'w');
-        Pintor.letra(g, 'B', 3, 12, 'c');
-        Pintor.letra(g, 'A', 15, 12, 'c');
+        // "d" e "b" (as letras que mais se confundem), no meio de cada metade
+        Pintor.letra(g, 'dp', 4, 12, 'c', 0, true);   // espelhadas
+        Pintor.letra(g, 'bp', 16, 12, 'c', 0, true);
         Pintor.ret(g, 9, 6, 6, 2, 't'); Pintor.ret(g, 9, 18, 6, 2, 't');        // faixas de remendo
         Pintor.ret(g, 4, 22, 3, 2, 'o'); Pintor.ret(g, 17, 22, 3, 2, 'o');
         A.mapa('silaba_quebrada', Pintor.texto(Pintor.contorno(g)),
             { k: K, o: '#e07a1f', e: '#14142b', w: '#ffffff', c: '#fff1d6', t: '#d9c9a0' },
-            2, 'Inimigo Sílaba Quebrada', null, 'ot');
+            2, 'Inimigo Sílaba Quebrada (d | b)', null, 'ot');
     })();
 
     // Pedaço da Sílaba: meia criatura, com um olho e a letra
@@ -285,20 +294,29 @@ RD.Arte = {
     })();
 
     // Criatura da Confusão: fantasminha pálido, olhos de tamanhos diferentes,
-    // um ponto de interrogação brilhando na barriga e a barra rasgada
+    // a barra rasgada e um ponto de interrogação roxo em cima da cabeça
     (function () {
         const g = Pintor.grade(24, 24);
-        Pintor.elipse(g, 12, 10, 9, 8.5, 't');
-        Pintor.ret(g, 3, 10, 18, 9, 't');
+        const Y = 3;                                         // corpo mais para baixo (espaço pro "?")
+        Pintor.elipse(g, 12, 10 + Y, 9, 8.5, 't');
+        Pintor.ret(g, 3, 10 + Y, 18, 9, 't');
         for (let x = 3; x < 21; x++) {                       // barra rasgada
-            const alt = [3, 2, 1, 2, 3, 1][x % 6];
-            Pintor.ret(g, x, 19, 1, alt, 't');
+            const alt = [2, 1, 1, 2, 2, 1][x % 6];
+            Pintor.ret(g, x, 19 + Y, 1, alt, 't');
         }
-        Pintor.ret(g, 6, 6, 4, 5, 'e'); Pintor.px(g, 6, 6, 'w');      // olho grande
-        Pintor.ret(g, 15, 8, 2, 3, 'e'); Pintor.px(g, 15, 8, 'w');    // olho pequeno
-        Pintor.ret(g, 9, 13, 2, 1, 'e'); Pintor.ret(g, 11, 14, 2, 1, 'e'); Pintor.ret(g, 13, 13, 2, 1, 'e'); // boca torta
-        Pintor.letra(g, 'Q', 13, 13, 'q');                   // "?" na barriga
-        A.mapa('criatura_confusao', Pintor.texto(Pintor.contorno(g)),
+        Pintor.ret(g, 6, 7 + Y, 4, 5, 'e'); Pintor.px(g, 6, 7 + Y, 'w');      // olho grande
+        Pintor.ret(g, 15, 9 + Y, 2, 3, 'e'); Pintor.px(g, 15, 9 + Y, 'w');    // olho pequeno
+        Pintor.ret(g, 9, 14 + Y, 2, 1, 'e'); Pintor.ret(g, 11, 15 + Y, 2, 1, 'e'); Pintor.ret(g, 13, 14 + Y, 2, 1, 'e'); // boca torta
+        const gc = Pintor.contorno(g);
+        // "?" saindo do alto da cabeça, com contorno próprio
+        const interrog = ['.###.', '#...#', '...#.', '..#..', '.....', '..#..'];
+        interrog.forEach((linha, j) => { for (let i = 0; i < 5; i++) if (linha[i] === '#') gc[j][11 + i] = 'q'; });
+        for (let y = 0; y < 8; y++) for (let x = 9; x < 18; x++) {
+            if (gc[y][x] === 'q') continue;
+            const viz = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => gc[y + dy] && gc[y + dy][x + dx] === 'q');
+            if (viz) gc[y][x] = 'k';
+        }
+        A.mapa('criatura_confusao', Pintor.texto(gc),
             { k: K, t: '#d9d4f2', e: '#14142b', w: '#ffffff', q: '#8f5cff' },
             2, 'Inimigo Criatura da Confusão (fantasma que muda de lugar)', null, 't');
     })();
@@ -571,24 +589,175 @@ RD.Arte = {
     }, true);
 
     // ---------------- OBJETOS ----------------
-    // Blocos das atividades: peças de madeira antigas com a face de pergaminho
-    // (a letra é escrita por cima pelo jogo, bem grande e escura)
-    function pecaMadeira(largura) {
+    // Blocos das atividades: placas de pedra encantadas, com moldura dourada e
+    // a face funda e escura onde a letra brilha (a letra é escrita pelo jogo)
+    function placaRuna(largura) {
         const W = largura / 2, H = 32;
         const g = Pintor.grade(W, H);
-        Pintor.ret(g, 1, 3, W - 2, H - 4, 'm');              // corpo de madeira
-        Pintor.ret(g, 1, H - 7, W - 2, 6, 'M');              // lateral de baixo (mais escura)
-        Pintor.ret(g, 3, 4, W - 6, H - 12, 'f');             // face de pergaminho
-        Pintor.ret(g, 3, 4, W - 6, 1, 'F');                  // brilho no alto da face
-        const r = A.aleatorio(largura);
-        for (let n = 0; n < W / 2; n++) Pintor.px(g, 4 + Math.floor(r() * (W - 8)), 6 + Math.floor(r() * (H - 15)), 'r'); // riscos
-        [[2, 4], [W - 3, 4], [2, H - 9], [W - 3, H - 9]].forEach(([x, y]) => Pintor.px(g, x, y, 'n')); // preguinhos
-        for (let x = 2; x < W - 2; x += 5) Pintor.px(g, x, H - 4, 'v');                                // veios da madeira
+        // corpo de pedra com cantos arredondados + lateral de baixo (dá volume)
+        Pintor.ret(g, 2, 1, W - 4, H - 4, 's');
+        Pintor.ret(g, 1, 2, W - 2, H - 6, 's');
+        Pintor.ret(g, 2, H - 7, W - 4, 4, 'd');
+        Pintor.ret(g, 1, H - 7, W - 2, 3, 'd');
+        Pintor.ret(g, 3, 2, W - 6, 1, 'h');                  // luz na borda de cima
+        // face funda onde fica a letra
+        Pintor.ret(g, 5, 5, W - 10, H - 14, 'f');
+        Pintor.ret(g, 5, 5, W - 10, 1, 'e');                 // sombra interna em cima
+        Pintor.ret(g, 5, 5, 1, H - 14, 'e');
+        // cantoneiras douradas
+        [[1, 2], [W - 4, 2], [1, H - 10], [W - 4, H - 10]].forEach(([x, y]) => {
+            Pintor.ret(g, x, y, 3, 3, 'o');
+            Pintor.px(g, x + (x < 3 ? 0 : 2), y, 'O');
+        });
+        // risquinhos e lascas na pedra
+        const r = A.aleatorio(largura + 7);
+        for (let n = 0; n < W / 4; n++) {
+            const x = 6 + Math.floor(r() * (W - 12));
+            Pintor.px(g, x, r() < 0.5 ? 3 : H - 8, 'd');
+        }
         return Pintor.texto(Pintor.contorno(g));
     }
-    const PAL_PECA = { k: K, m: '#8a5a32', M: '#5e3a1e', f: '#efe2c0', F: '#fff6dd', r: '#d6c59c', n: '#3a2a1a', v: '#4a2e17' };
-    A.mapa('bloco_letra', pecaMadeira(64), PAL_PECA, 2, 'Bloco de letra das atividades', null, 'm');
-    A.mapa('bloco_silaba', pecaMadeira(120), PAL_PECA, 2, 'Bloco de sílaba das atividades', null, 'm');
+    const PAL_PLACA = { k: K, s: '#4a4466', h: '#6e6894', d: '#2a2540', f: '#16132a', e: '#0d0b1a', o: '#c9a227', O: '#ffe58a' };
+    A.mapa('bloco_letra', placaRuna(64), PAL_PLACA, 2, 'Placa de pedra com letra (atividades)', null, 's');
+    A.mapa('bloco_silaba', placaRuna(120), PAL_PLACA, 2, 'Placa de pedra com sílaba (atividades)', null, 's');
+
+    // Letras das atividades no estilo dos objetos do Isaac: a própria letra é
+    // um objeto grosso de pedra-osso parado no chão, com lateral (volume),
+    // contorno preto, luz em cima e lascas. Gerada na hora para cada letra ou
+    // sílaba em ALTA resolução (o dobro do tamanho no jogo), para ficar nítida:
+    // quem usa a textura mostra ela com escala 0.5.
+    RD.Arte.ESCALA_LETRA = 0.5;
+    // "unica": cada bloco ganha rachaduras e lascas só dele (nenhuma letra igual à outra)
+    RD.Arte.contLetra = 0;
+    RD.Arte.letra3D = function (cena, valor, unica) {
+        const chave = 'letra3d_' + valor + (unica ? '_' + (++RD.Arte.contLetra) : '');
+        if (cena.textures.exists(chave)) return chave;
+        const S = 4;                                   // 4 pontos por unidade (= pixels reais da tela)
+        const silaba = valor.length > 1;
+        const W = (silaba ? 66 : 36) * S, H = 40 * S;
+        const tam = (silaba ? 25 : 30) * S, prof = 5 * S;
+        const cx = W / 2, cy = H / 2 - 3 * S;
+        const fonte = '700 ' + tam + 'px ' + RD.FONTE;
+        const novaTela = () => { const t = document.createElement('canvas'); t.width = W; t.height = H; return t; };
+        const r = unica ? Math.random : A.aleatorio(valor.charCodeAt(0) * 31 + valor.length);
+
+        // 1) FORMA da letra, já com os pedacinhos quebrados. Tudo (contorno,
+        //    lateral e frente) é feito a partir dela, então o contorno segue a quebra.
+        const forma = novaTela();
+        const fm = forma.getContext('2d');
+        fm.font = fonte; fm.textAlign = 'center'; fm.textBaseline = 'middle';
+        fm.fillStyle = '#000'; fm.fillText(valor, cx, cy);
+        const px = fm.getImageData(0, 0, W, H).data;
+        const cheio = (x, y) => x >= 0 && y >= 0 && x < W && y < H && px[(Math.floor(y) * W + Math.floor(x)) * 4 + 3] > 128;
+        fm.globalCompositeOperation = 'destination-out';
+        // lascas em lados sorteados (cima, baixo, esquerda ou direita), em
+        // quantidade e tamanho diferentes em cada letra
+        const totalLascas = (silaba ? 2 : 1) + Math.floor(r() * 3);
+        let lascas = 0;
+        for (let tent = 0; tent < 80 && lascas < totalLascas; tent++) {
+            const lado = Math.floor(r() * 4);          // 0 cima, 1 baixo, 2 esquerda, 3 direita
+            let x, y, dx = 0, dy = 0;
+            if (lado < 2) {
+                x = Math.floor(W * 0.1 + r() * W * 0.8);
+                y = lado === 0 ? 0 : H - 1; dy = lado === 0 ? 1 : -1;
+            } else {
+                y = Math.floor(H * 0.15 + r() * H * 0.6);
+                x = lado === 2 ? 0 : W - 1; dx = lado === 2 ? 1 : -1;
+            }
+            while (x >= 0 && y >= 0 && x < W && y < H && !cheio(x, y)) { x += dx; y += dy; }
+            if (!cheio(x, y)) continue;
+            // triângulo torto entrando na letra a partir da borda achada
+            // tamanho limitado: a lasca nunca muda a letra (um O não pode virar Q)
+            const l = (1.4 + r() * 2) * S;
+            const fundo = l * (0.6 + r() * 0.6);
+            const giro = (r() - 0.5) * 0.9;
+            const ang = Math.atan2(dy, dx) + giro;               // direção "para dentro"
+            const px1 = -Math.sin(ang), py1 = Math.cos(ang);      // perpendicular
+            fm.beginPath();
+            fm.moveTo(x - dx * S + px1 * l, y - dy * S + py1 * l);
+            fm.lineTo(x - dx * S - px1 * l * (0.5 + r() * 0.7), y - dy * S - py1 * l * (0.5 + r() * 0.7));
+            fm.lineTo(x + Math.cos(ang) * fundo, y + Math.sin(ang) * fundo);
+            fm.closePath(); fm.fill();
+            lascas++;
+        }
+        fm.globalCompositeOperation = 'source-over';
+
+        // pinta a forma de uma cor (mantendo o formato)
+        const colorir = (cor) => {
+            const t = novaTela(); const g = t.getContext('2d');
+            g.drawImage(forma, 0, 0);
+            g.globalCompositeOperation = 'source-in';
+            g.fillStyle = cor; g.fillRect(0, 0, W, H);
+            return t;
+        };
+
+        // 2) FRENTE: degradê, pintinhas e rachaduras
+        const frente = colorir('#e9ddc2');
+        const f = frente.getContext('2d');
+        f.globalCompositeOperation = 'source-atop';
+        const gr = f.createLinearGradient(0, cy - tam * 0.5, 0, cy + tam * 0.5);
+        gr.addColorStop(0, '#fff7e3'); gr.addColorStop(0.45, '#eadfc4'); gr.addColorStop(1, '#c4b28b');
+        f.fillStyle = gr; f.fillRect(0, 0, W, H);
+        for (let i = 0; i < (silaba ? 26 : 14); i++) {
+            f.fillStyle = r() < 0.6 ? 'rgba(120,100,70,0.55)' : 'rgba(255,255,255,0.5)';
+            f.fillRect(Math.floor(r() * W), Math.floor(r() * H), S, S);
+        }
+        const rachar = (x, y, ang, passos, grossura) => {
+            const pontos = [[x, y]];
+            for (let i = 0; i < passos; i++) {
+                ang += (r() - 0.5) * 1.3;
+                const tamPasso = (3 + r() * 4) * S;
+                x += Math.cos(ang) * tamPasso; y += Math.sin(ang) * tamPasso;
+                pontos.push([x, y]);
+                if (r() < 0.3) {
+                    const a2 = ang + (r() < 0.5 ? 1 : -1) * (0.7 + r() * 0.6);
+                    const l2 = (2 + r() * 3) * S;
+                    f.strokeStyle = 'rgba(45,32,18,0.9)'; f.lineWidth = grossura * 0.6;
+                    f.beginPath(); f.moveTo(x, y); f.lineTo(x + Math.cos(a2) * l2, y + Math.sin(a2) * l2); f.stroke();
+                }
+            }
+            const linha = (dx, dy, cor, larg) => {
+                f.strokeStyle = cor; f.lineWidth = larg;
+                f.beginPath(); pontos.forEach(([qx, qy], i) => (i ? f.lineTo(qx + dx, qy + dy) : f.moveTo(qx + dx, qy + dy))); f.stroke();
+            };
+            linha(S * 0.6, S * 0.6, 'rgba(255,248,225,0.7)', grossura * 0.7);
+            linha(0, 0, 'rgba(40,28,14,0.95)', grossura);
+        };
+        f.lineCap = 'round'; f.lineJoin = 'round';
+        const totalRach = (silaba ? 2 : 1) + Math.floor(r() * 3);
+        for (let i = 0; i < totalRach; i++) {
+            const lado = Math.floor(r() * 4);
+            const larg = silaba ? W * 0.35 : tam * 0.45;
+            const x0 = lado === 2 ? cx - larg : lado === 3 ? cx + larg : cx + (r() - 0.5) * larg * 1.6;
+            const y0 = lado === 0 ? cy - tam * 0.45 : lado === 1 ? cy + tam * 0.4 : cy + (r() - 0.5) * tam * 0.7;
+            const ang = [Math.PI / 2, -Math.PI / 2, 0, Math.PI][lado] + (r() - 0.5) * 1.1;
+            rachar(x0, y0, ang, 2 + Math.floor(r() * 4), S * (0.7 + r() * 0.8));
+        }
+        // contorno fino por dentro da frente (separa da lateral)
+        f.globalCompositeOperation = 'source-over';
+
+        // 3) MONTA: contorno preto (a forma "engordada"), lateral e frente
+        const tela = novaTela();
+        const c = tela.getContext('2d');
+        const preto = colorir('#0b0912');
+        const raio = 1.75 * S;
+        for (let d = prof; d >= 0; d -= 2) {
+            for (let k = 0; k < 16; k++) {
+                const a = (k / 16) * Math.PI * 2;
+                c.drawImage(preto, Math.cos(a) * raio, d + Math.sin(a) * raio);
+            }
+        }
+        const lado1 = colorir('#55462f'), lado2 = colorir('#76654a'), fio = colorir('#9c8a68');
+        for (let d = prof; d >= 1; d--) c.drawImage(d > prof * 0.55 ? lado1 : lado2, 0, d);
+        c.drawImage(fio, 0, S * 0.6);
+        c.drawImage(frente, 0, 0);
+
+        const t = cena.textures.createCanvas(chave, W, H);
+        t.getContext().drawImage(tela, 0, 0);
+        t.refresh();
+        t.setFilter(Phaser.Textures.FilterMode.LINEAR);
+        return chave;
+    };
 
     A.add('livro', 48, 48, 'Livro brilhante da luta contra o chefe', (ctx) => {
         const g = ctx.createRadialGradient(24, 24, 4, 24, 24, 24);
@@ -712,8 +881,60 @@ RD.Arte = {
             ctx.fillRect(46, 31, 4, 7);
         }
     }
-    A.add('porta_aberta', 96, 48, 'Porta aberta', (ctx) => porta(ctx, false));
-    A.add('porta_trancada', 96, 48, 'Porta trancada', (ctx) => porta(ctx, true));
+
+    // Porta do chefe: moldura de carne-pedra vermelha com chifres, uma boca
+    // de dentes em volta da abertura e luz vermelha lá dentro
+    function portaChefe(ctx, trancada) {
+        ctx.fillStyle = K;
+        retArredondado(ctx, 0, 0, 96, 52, 18); ctx.fill();
+        ctx.fillStyle = '#5e1b2c';
+        retArredondado(ctx, 3, 3, 90, 48, 16); ctx.fill();
+        ctx.fillStyle = '#8e2a3e';
+        retArredondado(ctx, 3, 3, 90, 10, 6); ctx.fill();
+        // veias / rachaduras na moldura
+        ctx.fillStyle = '#3b0e19';
+        [[8, 16, 2, 10], [10, 25, 2, 8], [84, 14, 2, 12], [86, 27, 2, 9], [5, 36, 6, 2], [85, 40, 6, 2]].forEach(([x, y, w, h]) => ctx.fillRect(x, y, w, h));
+        // chifres nos cantos (apontando para fora da sala)
+        const chifre = (x, dir) => {
+            ctx.fillStyle = K;
+            ctx.beginPath(); ctx.moveTo(x, 12); ctx.lineTo(x + dir * 14, 12); ctx.lineTo(x + dir * 3, -2); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#e8dcc0';
+            ctx.beginPath(); ctx.moveTo(x + dir * 2, 10); ctx.lineTo(x + dir * 11, 10); ctx.lineTo(x + dir * 4, 1); ctx.closePath(); ctx.fill();
+        };
+        chifre(4, 1); chifre(92, -1);
+        // abertura
+        ctx.fillStyle = K;
+        retArredondado(ctx, 15, 9, 66, 42, 14); ctx.fill();
+        const g = ctx.createLinearGradient(0, 12, 0, 50);
+        g.addColorStop(0, trancada ? '#1a0508' : '#2a0610');
+        g.addColorStop(1, trancada ? '#3a0a14' : '#c0283f');
+        ctx.fillStyle = g;
+        retArredondado(ctx, 18, 12, 60, 39, 12); ctx.fill();
+        // dentes em cima e embaixo da abertura (a porta é uma boca)
+        ctx.fillStyle = '#f2ead8';
+        for (let x = 20; x < 76; x += 8) {
+            ctx.beginPath(); ctx.moveTo(x, 12); ctx.lineTo(x + 7, 12); ctx.lineTo(x + 3.5, 19); ctx.closePath(); ctx.fill();
+        }
+        for (let x = 24; x < 72; x += 8) {
+            ctx.beginPath(); ctx.moveTo(x, 51); ctx.lineTo(x + 7, 51); ctx.lineTo(x + 3.5, 45); ctx.closePath(); ctx.fill();
+        }
+        if (trancada) {
+            // a boca fechada: dentes trancados no meio
+            ctx.fillStyle = '#f2ead8';
+            for (let x = 20; x < 76; x += 8) {
+                ctx.beginPath(); ctx.moveTo(x, 20); ctx.lineTo(x + 7, 20); ctx.lineTo(x + 3.5, 34); ctx.closePath(); ctx.fill();
+            }
+            for (let x = 24; x < 72; x += 8) {
+                ctx.beginPath(); ctx.moveTo(x, 44); ctx.lineTo(x + 7, 44); ctx.lineTo(x + 3.5, 30); ctx.closePath(); ctx.fill();
+            }
+        } else {
+            // olhinhos vermelhos lá no fundo
+            ctx.fillStyle = '#ff3355';
+            ctx.fillRect(38, 30, 5, 4); ctx.fillRect(53, 30, 5, 4);
+        }
+    }
+    A.add('porta_chefe', 96, 48, 'Porta que leva ao chefe', (ctx) => portaChefe(ctx, false));
+    A.add('porta_chefe_trancada', 96, 48, 'Porta do chefe fechada', (ctx) => portaChefe(ctx, true));
 
     // ---------------- CENÁRIOS (escuros, estilo porão) ----------------
     RD.CORES_CENARIO = {
@@ -777,12 +998,14 @@ RD.Arte = {
 
         // Pedra (obstáculo): rocha com volume, rachaduras e uma letra gravada.
         // No Labirinto tem musgo; no Núcleo a letra brilha em vermelho.
-        (function () {
+        // Uma versão da pedra para cada letra de A a Z (o jogo sorteia a letra de cada pedra)
+        RD.LETRAS_PEDRA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+        [c.letra].concat(RD.LETRAS_PEDRA).forEach((letra, iLetra) => {
+            const chave = iLetra === 0 ? 'bloco_' + id : 'bloco_' + id + '_' + letra;
             const g = Pintor.grade(24, 24);
             Pintor.elipse(g, 12, 14, 10.5, 8.5, 's');
             Pintor.elipse(g, 9, 10, 7, 6, 's');
             Pintor.elipse(g, 16, 11, 5.5, 5, 's');
-            Pintor.letra(g, c.letra === '?' ? 'Q' : c.letra, 9, 9, 'L');
             Pintor.ret(g, 4, 15, 1, 3, 'x'); Pintor.px(g, 5, 18, 'x'); Pintor.px(g, 6, 19, 'x');   // rachaduras
             Pintor.px(g, 18, 8, 'x'); Pintor.px(g, 19, 9, 'x'); Pintor.px(g, 19, 10, 'x');
             Pintor.ret(g, 6, 6, 3, 1, 'h'); Pintor.ret(g, 5, 7, 1, 2, 'h');                         // brilho
@@ -790,16 +1013,34 @@ RD.Arte = {
                 [[3, 12], [4, 11], [5, 11], [14, 6], [15, 6], [16, 6], [17, 7], [12, 20], [13, 20]].forEach(([x, y]) => Pintor.px(g, x, y, 'u'));
             }
             const mapa = Pintor.texto(Pintor.contorno(g));
-            A.mapa('bloco_' + id, mapa, {
+            A.mapa(chave, mapa, {
                 k: K, s: c.pedra, h: c.pedraClara, x: c.pedraEscura, L: c.letraPedra, u: '#4f9a4a',
-            }, 2, 'Pedra (obstáculo) do cenário ' + id, (ctx) => {
+            }, 2, iLetra === 0 ? 'Pedra (obstáculo) do cenário ' + id : 'Pedra com a letra ' + letra + ' (' + id + ')', (ctx) => {
+                // letra gravada na pedra, na fonte OpenDyslexic: um fio de luz
+                // embaixo e a letra funda por cima (parece entalhada)
+                // acha o meio da pedra (pelos pixels desenhados) e o tamanho real da letra
+                const dados = ctx.getImageData(0, 0, 48, 48).data;
+                let x0 = 48, y0 = 48, x1 = 0, y1 = 0;
+                for (let y = 0; y < 48; y++) for (let x = 0; x < 48; x++) {
+                    if (dados[(y * 48 + x) * 4 + 3] > 0) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+                }
+                ctx.font = '700 17px ' + RD.FONTE_DISLEXIA;
+                ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+                const m = ctx.measureText(letra);
+                const larg = m.actualBoundingBoxLeft + m.actualBoundingBoxRight;
+                const alt = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
+                // centraliza a letra no meio da pedra (um pouquinho acima, por causa da luz embaixo)
+                const lx = Math.round((x0 + x1 + 1) / 2 - larg / 2 + m.actualBoundingBoxLeft - 0.5);
+                const ly = Math.round((y0 + y1 + 1) / 2 + alt / 2 - m.actualBoundingBoxDescent - 0.5);
+                ctx.fillStyle = c.pedraClara; ctx.fillText(letra, lx + 1, ly + 1);
+                ctx.fillStyle = c.letraPedra; ctx.fillText(letra, lx, ly);
                 // sombra no chão por baixo da pedra
                 ctx.globalCompositeOperation = 'destination-over';
                 ctx.fillStyle = 'rgba(0,0,0,0.4)';
                 ctx.beginPath(); ctx.ellipse(24, 42, 21, 5, 0, 0, Math.PI * 2); ctx.fill();
                 ctx.globalCompositeOperation = 'source-over';
             }, 's');
-        })();
+        });
 
         A.add('rachada_' + id, 96, 48, 'Parede rachada (esconde sala secreta) do cenário ' + id, (ctx) => {
             tijolos(ctx, c, 96, 301 + n);
@@ -890,6 +1131,95 @@ RD.Arte = {
         });
     });
 
+    // ---------------- PORTAS ----------------
+    // Arco de pedra com as cores da parede de cada andar (pilares de tijolo,
+    // pedras do arco e uma pedra-chave com um ponto dourado). Aberta: corredor
+    // escuro com um degrau de pedra. Trancada: portas de madeira com faixas
+    // de ferro e um cadeado dourado. Desenhadas para a porta de CIMA
+    // (o jogo gira para os outros lados).
+    function mapaPorta(trancada) {
+        // 48 x 24 (x2 = 96 x 48): exatamente do tamanho de um pedaço de parede
+        const W = 48, H = 24;
+        const g = Pintor.grade(W, H);
+        Pintor.ret(g, 0, 0, W, H, 'p');
+        // juntas dos tijolos nos pilares
+        for (let y = 4; y < H; y += 5) { Pintor.ret(g, 0, y, 9, 1, 'j'); Pintor.ret(g, W - 9, y, 9, 1, 'j'); }
+        for (let y = 0; y < H; y += 5) {
+            const d = (y / 5) % 2 ? 3 : 6;
+            Pintor.ret(g, d, y, 1, 4, 'j'); Pintor.ret(g, W - 1 - d, y, 1, 4, 'j');
+        }
+        // pedras do arco
+        Pintor.ret(g, 8, 3, W - 16, 4, 'a');
+        Pintor.ret(g, 8, 3, 3, H - 3, 'a'); Pintor.ret(g, W - 11, 3, 3, H - 3, 'a');
+        [13, 18, 29, 34].forEach(x => Pintor.ret(g, x, 3, 1, 4, 'j'));
+        [10, 15, 20].forEach(y => { Pintor.ret(g, 8, y, 3, 1, 'j'); Pintor.ret(g, W - 11, y, 3, 1, 'j'); });
+        // pedra-chave com ponto dourado
+        Pintor.ret(g, 20, 0, 8, 7, 'c');
+        Pintor.ret(g, 20, 0, 8, 1, 'C');
+        Pintor.ret(g, 22, 2, 4, 3, 'o'); Pintor.ret(g, 22, 2, 4, 1, 'O');
+        // abertura com topo arredondado
+        Pintor.ret(g, 11, 7, W - 22, H - 7, 'e');
+        [[11, 7], [12, 7], [11, 8], [W - 12, 7], [W - 13, 7], [W - 12, 8]].forEach(([x, y]) => Pintor.px(g, x, y, 'a'));
+        // bases dos pilares
+        Pintor.ret(g, 0, H - 3, 11, 3, 'b'); Pintor.ret(g, W - 11, H - 3, 11, 3, 'b');
+        Pintor.ret(g, 0, H - 3, 11, 1, 'B'); Pintor.ret(g, W - 11, H - 3, 11, 1, 'B');
+        if (!trancada) {
+            // vão vazio: aparece o próprio chão da sala, com uma sombra que vai
+            // do escuro (lá fora) até sumir no chão (desenhada depois)
+            Pintor.ret(g, 11, 7, W - 22, H - 7, '.');
+            [[11, 7], [12, 7], [11, 8], [W - 12, 7], [W - 13, 7], [W - 12, 8]].forEach(([x, y]) => Pintor.px(g, x, y, 'a'));
+        } else {
+            // duas folhas de madeira
+            Pintor.ret(g, 12, 8, W - 24, H - 8, 'w');
+            for (let x = 15; x < W - 12; x += 4) Pintor.ret(g, x, 8, 1, H - 8, 'W');
+            Pintor.ret(g, 23, 8, 2, H - 8, 'e');
+            [11, 20].forEach(y => {
+                Pintor.ret(g, 12, y, W - 24, 2, 'i');
+                for (let x = 14; x < W - 12; x += 5) Pintor.px(g, x, y, 'I');
+            });
+            // cadeado
+            Pintor.ret(g, 20, 14, 8, 6, 'o');
+            Pintor.ret(g, 20, 14, 8, 1, 'O');
+            Pintor.ret(g, 21, 12, 6, 2, 'i'); Pintor.ret(g, 22, 13, 4, 1, 'e');
+            Pintor.ret(g, 23, 16, 2, 3, 'e');
+        }
+        return Pintor.texto(g);
+    }
+    const paletaPorta = (c) => ({
+        // mesmas cores da parede da sala, só um pouquinho mais claras na moldura
+        k: K, p: c.parede, j: c.paredeEscura, a: RD.Arte.tom(c.parede, 0.1),
+        c: RD.Arte.tom(c.paredeClara, -0.05), C: c.paredeClara,
+        b: RD.Arte.tom(c.parede, 0.14), B: c.paredeClara,
+        o: '#d9a800', O: '#ffe58a', e: '#050409', f: '#0e0c16', g: '#1a1726',
+        h: RD.Arte.tom(c.pedra, -0.05), H: RD.Arte.tom(c.pedraClara, 0.15),
+        w: '#6b4423', W: '#3e2612', i: '#2b2d38', I: '#9aa0b5',
+    });
+    // sombra no vão da porta aberta: preta lá fora e sumindo até o fim, no chão da sala
+    function sombraVao(ctx, w, h) {
+        const x0 = 22, x1 = w - 22, y0 = 14;
+        const gr = ctx.createLinearGradient(0, y0, 0, h);
+        gr.addColorStop(0, 'rgba(4,3,8,1)');
+        gr.addColorStop(0.45, 'rgba(4,3,8,0.75)');
+        gr.addColorStop(1, 'rgba(4,3,8,0)');
+        ctx.fillStyle = gr;
+        ctx.fillRect(x0, y0, x1 - x0, h - y0);
+        // cantinhos de sombra dos lados do vão
+        const lado = ctx.createLinearGradient(x0, 0, x0 + 8, 0);
+        lado.addColorStop(0, 'rgba(4,3,8,0.6)'); lado.addColorStop(1, 'rgba(4,3,8,0)');
+        ctx.fillStyle = lado; ctx.fillRect(x0, y0, 8, h - y0);
+        const lado2 = ctx.createLinearGradient(x1, 0, x1 - 8, 0);
+        lado2.addColorStop(0, 'rgba(4,3,8,0.6)'); lado2.addColorStop(1, 'rgba(4,3,8,0)');
+        ctx.fillStyle = lado2; ctx.fillRect(x1 - 8, y0, 8, h - y0);
+    }
+    Object.keys(RD.CORES_CENARIO).forEach((id) => {
+        const c = RD.CORES_CENARIO[id];
+        A.mapa('porta_aberta_' + id, mapaPorta(false), paletaPorta(c), 2, 'Porta aberta (' + id + ')', sombraVao, 'pab');
+        A.mapa('porta_trancada_' + id, mapaPorta(true), paletaPorta(c), 2, 'Porta trancada (' + id + ')', null, 'pabw');
+    });
+    // versões "padrão" (usadas nos ícones do menu e do final)
+    A.mapa('porta_aberta', mapaPorta(false), paletaPorta(RD.CORES_CENARIO.letras), 2, 'Porta aberta', sombraVao, 'pab');
+    A.mapa('porta_trancada', mapaPorta(true), paletaPorta(RD.CORES_CENARIO.letras), 2, 'Porta trancada', null, 'pabw');
+
     // ---------------- PLAQUINHA ----------------
     // Plaquinha pequena de madeira com um papel pregado (o jogo escreve o nome por cima)
     (function () {
@@ -964,7 +1294,7 @@ RD.Arte = {
         }
         // letras arranhadas no chão
         const nLetras = Math.floor(r() * 4);
-        ctx.font = '700 26px ' + RD.FONTE;
+        ctx.font = '700 26px ' + RD.FONTE_DISLEXIA;
         ctx.fillStyle = 'rgba(0,0,0,0.22)';
         for (let i = 0; i < nLetras; i++) {
             const [x, y] = dentro(90);

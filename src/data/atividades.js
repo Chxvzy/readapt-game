@@ -5,11 +5,11 @@
 //
 // 1) 'palavra' (palavra embaralhada): as letras aparecem soltas na sala e
 //    a criança atira nelas na ordem certa.
-//      { palavra: 'GATO', dica: '🐱' }
+//      { palavra: 'GATO' }
 //
 // 2) 'silaba' (sílaba que falta): aparece a palavra com uma sílaba faltando
 //    e a criança atira na sílaba certa entre 3 opções.
-//      { partes: ['CA', 'SA'], falta: 0, opcoes: ['CA', 'LU', 'FI'], dica: '🏠' }
+//      { partes: ['CA', 'SA'], falta: 0, opcoes: ['CA', 'LU', 'FI'] }
 //      - partes: as sílabas da palavra, em ordem
 //      - falta: qual parte está escondida (0 = primeira, 1 = segunda...)
 //      - opcoes: as 3 opções (uma delas é a certa)
@@ -25,20 +25,20 @@ RD.ATIVIDADES = {
     letras_gato: {
         tipo: 'palavra',
         rodadas: [
-            { palavra: 'GATO', dica: '🐱' },
+            { palavra: 'GATO' },
         ],
     },
     letras_casa: {
         tipo: 'silaba',
         rodadas: [
-            { partes: ['CA', 'SA'], falta: 0, opcoes: ['CA', 'LU', 'FI'], dica: '🏠' },
+            { partes: ['CA', 'SA'], falta: 0, opcoes: ['CA', 'LU', 'FI'] },
         ],
     },
     letras_extra: {
         tipo: 'palavra',
         rodadas: [
-            { palavra: 'SOL', dica: '☀️' },
-            { palavra: 'LUA', dica: '🌙' },
+            { palavra: 'SOL' },
+            { palavra: 'LUA' },
         ],
     },
 
@@ -46,29 +46,29 @@ RD.ATIVIDADES = {
     lab_animais: {
         tipo: 'palavra',
         rodadas: [
-            { palavra: 'PATO', dica: '🦆' },
-            { palavra: 'SAPO', dica: '🐸' },
+            { palavra: 'PATO' },
+            { palavra: 'SAPO' },
         ],
     },
     lab_silabas: {
         tipo: 'silaba',
         rodadas: [
-            { partes: ['JA', 'NE', 'LA'], falta: 1, opcoes: ['NE', 'MO', 'TU'], dica: '🪟' },
-            { partes: ['MA', 'CA', 'CO'], falta: 1, opcoes: ['CA', 'LI', 'VE'], dica: '🐒' },
+            { partes: ['JA', 'NE', 'LA'], falta: 1, opcoes: ['NE', 'MO', 'TU'] },
+            { partes: ['MA', 'CA', 'CO'], falta: 1, opcoes: ['CA', 'LI', 'VE'] },
         ],
     },
     lab_extra: {
         tipo: 'palavra',
         rodadas: [
-            { palavra: 'UVA', dica: '🍇' },
-            { palavra: 'VACA', dica: '🐄' },
+            { palavra: 'UVA' },
+            { palavra: 'VACA' },
         ],
     },
     lab_final: {
         tipo: 'palavra',
         rodadas: [
-            { palavra: 'LIVRO', dica: '📖' },
-            { palavra: 'FOGUETE', dica: '🚀' },
+            { palavra: 'LIVRO' },
+            { palavra: 'FOGUETE' },
         ],
     },
 
@@ -76,14 +76,14 @@ RD.ATIVIDADES = {
     nucleo_silabas: {
         tipo: 'silaba',
         rodadas: [
-            { partes: ['TO', 'MA', 'TE'], falta: 1, opcoes: ['MA', 'RI', 'SU'], dica: '🍅' },
-            { partes: ['CA', 'VA', 'LO'], falta: 1, opcoes: ['VA', 'MI', 'TU'], dica: '🐴' },
+            { partes: ['TO', 'MA', 'TE'], falta: 1, opcoes: ['MA', 'RI', 'SU'] },
+            { partes: ['CA', 'VA', 'LO'], falta: 1, opcoes: ['VA', 'MI', 'TU'] },
         ],
     },
     nucleo_extra: {
         tipo: 'palavra',
         rodadas: [
-            { palavra: 'ESTRELA', dica: '⭐' },
+            { palavra: 'ESTRELA' },
         ],
     },
 };
@@ -92,18 +92,17 @@ RD.ATIVIDADES = {
 // PERGUNTAS DO CHEFE FINAL
 // A criança escolhe entre 3 opções (teclas 1, 2, 3, setas + Enter ou mouse).
 //   - pergunta: o que aparece em cima
-//   - dica: figura
 //   - texto: palavra com espaço vazio (opcional)
 //   - opcoes: as 3 opções (a PRIMEIRA é sempre a certa; o jogo embaralha)
 // =====================================================================
 
 RD.PERGUNTAS_CHEFE = [
-    { pergunta: 'Qual palavra está escrita certo?', dica: '🐟', opcoes: ['PEIXE', 'PIEXE', 'XEIPE'] },
-    { pergunta: 'Qual sílaba completa a palavra?', dica: '🍌', texto: 'BA  NA  __', opcoes: ['NA', 'TO', 'LE'] },
-    { pergunta: 'Qual palavra está escrita certo?', dica: '🌸', opcoes: ['FLOR', 'FORL', 'LFOR'] },
-    { pergunta: 'Qual sílaba completa a palavra?', dica: '🦒', texto: 'GI  RA  __', opcoes: ['FA', 'SO', 'MU'] },
-    { pergunta: 'Qual palavra está escrita certo?', dica: '🚗', opcoes: ['CARRO', 'CAROR', 'RACRO'] },
-    { pergunta: 'Qual sílaba completa a palavra?', dica: '🍓', texto: 'MO  RAN  __', opcoes: ['GO', 'TI', 'LA'] },
-    { pergunta: 'Qual palavra está escrita certo?', dica: '🐶', opcoes: ['CACHORRO', 'CAHCORRO', 'CACHOROR'] },
-    { pergunta: 'Qual sílaba completa a palavra?', dica: '🥚', texto: 'O  __', opcoes: ['VO', 'MI', 'SA'] },
+    { pergunta: 'Qual palavra está escrita certo?', opcoes: ['PEIXE', 'PIEXE', 'XEIPE'] },
+    { pergunta: 'Qual sílaba completa a palavra?', texto: 'BA  NA  __', opcoes: ['NA', 'TO', 'LE'] },
+    { pergunta: 'Qual palavra está escrita certo?', opcoes: ['FLOR', 'FORL', 'LFOR'] },
+    { pergunta: 'Qual sílaba completa a palavra?', texto: 'GI  RA  __', opcoes: ['FA', 'SO', 'MU'] },
+    { pergunta: 'Qual palavra está escrita certo?', opcoes: ['CARRO', 'CAROR', 'RACRO'] },
+    { pergunta: 'Qual sílaba completa a palavra?', texto: 'MO  RAN  __', opcoes: ['GO', 'TI', 'LA'] },
+    { pergunta: 'Qual palavra está escrita certo?', opcoes: ['CACHORRO', 'CAHCORRO', 'CACHOROR'] },
+    { pergunta: 'Qual sílaba completa a palavra?', texto: 'O  __', opcoes: ['VO', 'MI', 'SA'] },
 ];

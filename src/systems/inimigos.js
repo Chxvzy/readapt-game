@@ -4,8 +4,11 @@ RD.IA = {
         const def = RD.INIMIGOS[tipo];
         forca = forca || 1;
         const en = cena.gInimigos.create(x, y, def.textura).setDepth(6);
+        const esc = (RD.Arte.escalas && RD.Arte.escalas[def.textura]) || 1;   // texturas feitas em dobro
+        if (esc !== 1) en.setScale(esc);
+        // colisão redonda (em pixels da textura; o Phaser aplica a escala sozinho)
         const tam = Math.min(en.width, en.height);
-        en.body.setCircle(tam * 0.36, en.width / 2 - tam * 0.36, en.height / 2 - tam * 0.36 + 2);
+        en.body.setCircle(tam * 0.36, en.width / 2 - tam * 0.36, en.height / 2 - tam * 0.36 + 2 / esc);
         en.tipo = tipo;
         en.def = def;
         en.vida = Math.ceil(def.vida * forca);
@@ -14,7 +17,7 @@ RD.IA = {
         en.proximaAcao = en.ativoEm + Phaser.Math.Between(300, 1200);
         en.fase = Math.random() * 10;
         if (def.comportamento === 'atirar') en.body.setImmovable(true);
-        RD.Efeitos.sombra(cena, en, en.width / 48);
+        RD.Efeitos.sombra(cena, en, en.displayWidth / 48);
         en.setAlpha(0);
         cena.tweens.add({ targets: en, alpha: 1, duration: 500 });
         return en;

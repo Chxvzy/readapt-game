@@ -39,8 +39,9 @@ Se o nome estiver errado, o jogo avisa no console e continua usando o desenho fe
 | `livro` | 48 x 48 | Livro brilhante da luta contra o chefe |
 | `placa` | 88 x 56 | Plaquinha com o nome do próximo cenário |
 | `portal` | 120 x 120 | Portal (só na história) |
-| `porta_aberta` | 96 x 48 | Porta aberta |
-| `porta_trancada` | 96 x 48 | Porta trancada |
+| `porta_aberta_letras` (e `_labirinto`, `_nucleo`) | 96 x 48 | Porta aberta de cada andar (arco de pedra) |
+| `porta_trancada_letras` (e `_labirinto`, `_nucleo`) | 96 x 48 | Porta trancada de cada andar (madeira e cadeado) |
+| `porta_chefe` / `porta_chefe_trancada` | 96 x 48 | Porta que leva ao chefe (boca com dentes) |
 | `piso_letras` | 48 x 48 | Piso do cenário letras (repete pela sala) |
 | `parede_letras` | 48 x 48 | Parede do cenário letras |
 | `bloco_letras` | 48 x 48 | Pedra (obstáculo) do cenário letras |

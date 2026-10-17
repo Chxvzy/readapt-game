@@ -134,7 +134,7 @@ RD.CenaFim = class extends Phaser.Scene {
         const r = RD.Estado.resumo();
         const W = RD.LARGURA;
         const itens = [
-            { icone: 'bloco_letra', escala: 0.42, texto: 'Atividades', feito: r.atividadesFeitas, total: r.atividades },
+            { icone: RD.Arte.letra3D(this, 'A'), escala: 0.42 * RD.Arte.ESCALA_LETRA, texto: 'Atividades', feito: r.atividadesFeitas, total: r.atividades },
             { icone: 'porta_aberta', escala: 0.36, texto: 'Salas secretas', feito: r.segredosAchados, total: r.segredos },
             { icone: 'up_pulso', escala: 0.6, texto: 'Upgrades', feito: r.upgradesPegos, total: r.upgrades },
         ];
@@ -142,7 +142,7 @@ RD.CenaFim = class extends Phaser.Scene {
             const x = W / 2 - 250 + i * 250;
             const y = 438;
             pagina.add(this.add.image(x - 70, y, it.icone).setScale(it.escala));
-            if (it.icone === 'bloco_letra') pagina.add(this.add.text(x - 70, y - 1, 'A', RD.UI.estilo(16, '#14142b', { fontStyle: '700' })).setOrigin(0.5));
+            
             pagina.add(this.add.text(x - 46, y - 12, it.texto, RD.UI.estilo(15, '#6b5a3e', { fontStyle: '600' })));
             const completo = it.feito >= it.total;
             pagina.add(this.add.text(x - 46, y + 6, it.feito + ' de ' + it.total + (completo ? '  ✔' : ''),

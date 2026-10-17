@@ -31,6 +31,7 @@ RD.CenaJogo = class extends Phaser.Scene {
         this.gItens = this.physics.add.staticGroup();
         this.gPortal = this.physics.add.staticGroup();
         this.gInimigos = this.physics.add.group();
+        this.gBarreiras = this.physics.add.staticGroup(); // só os inimigos batem (portas abertas para fugir)
 
         this.jogador = RD.Jogador.criar(this, RD.CENTRO_X, RD.CENTRO_Y);
         this.hud = new RD.Hud(this);
@@ -49,6 +50,7 @@ RD.CenaJogo = class extends Phaser.Scene {
             this.physics.add.collider(this.gTirosInim, g, (t) => t.destroy());
         });
         this.physics.add.collider(this.gInimigos, this.gInimigos);
+        this.physics.add.collider(this.gInimigos, this.gBarreiras);
 
         [this.gParedes, this.gObst, this.gPortasFechadas, this.gNpcs].forEach((g) => {
             this.physics.add.collider(this.gTiros, g, (t) => t.destroy());
@@ -78,7 +80,7 @@ RD.CenaJogo = class extends Phaser.Scene {
         this.tweens.killAll();
         if (this.atividade) { this.atividade.destruir(); this.atividade = null; }
         [this.gParedes, this.gObst, this.gPortasFechadas, this.gPortasAbertas, this.gRachadas,
-            this.gBlocos, this.gNpcs, this.gItens, this.gPortal, this.gInimigos, this.gTiros, this.gTirosInim]
+            this.gBlocos, this.gNpcs, this.gItens, this.gPortal, this.gInimigos, this.gTiros, this.gTirosInim, this.gBarreiras]
             .forEach(g => g.clear(true, true));
         this.objSala.forEach(o => o.destroy());
         this.objSala = [];
@@ -114,8 +116,8 @@ RD.CenaJogo = class extends Phaser.Scene {
             this.objSala.push(...RD.UI.letrasFlutuando(this, f.quantidade, f.cor, f.alfa, 1));
         }
 
-        this.criarParedesEPortas(chave, d);
         this.entradaSala = entrada;
+        this.criarParedesEPortas(chave, d);
         this.criarConteudo(d, k);
         this.posicionarJogador(entrada);
 
@@ -196,10 +198,42 @@ RD.CenaJogo = class extends Phaser.Scene {
         return !!(RD.estado.rachadas && RD.estado.rachadas[kDest]);
     }
 
+    // Uma sala já "liberada": limpa, com a atividade feita, ou sem desafio e já visitada
+    salaLiberada(destino) {
+        const e = RD.estado;
+        const d = this.cen.salas[destino];
+        const k = RD.Estado.chave(e.cenario, destino);
+        if (!d || !e.visitadas[k]) return false;
+        if (e.limpas[k]) return true;
+        if (d.atividade) return !!e.atividades[k];
+        const temInimigos = !!(d.mapa && d.mapa.some(l => /[LSPC]/.test(l)));
+        return !temInimigos && d.tipo !== 'chefe';
+    }
+
     criarPorta(dir, destino, L) {
-        const trancada = !this.salaLimpa;
-        const img = this.add.image(L.x, L.y, trancada ? 'porta_trancada' : 'porta_aberta').setAngle(L.ang).setDepth(3);
+        // Com desafio na sala, as portas trancam, MENOS a porta por onde o jogador
+        // entrou e as que levam para salas já liberadas: por elas dá para fugir.
+        const rotaDeFuga = dir === this.entradaSala || this.salaLiberada(destino);
+        const trancada = !this.salaLimpa && !rotaDeFuga;
+        if (!this.salaLimpa && rotaDeFuga) {
+            // os inimigos não passam por essa porta aberta
+            const b = this.add.zone(L.x, L.y, L.w, L.h);
+            this.physics.add.existing(b, true);
+            this.gBarreiras.add(b);
+        }
+        const doChefe = this.cen.salas[destino] && this.cen.salas[destino].tipo === 'chefe';
+        const tex = doChefe ? (trancada ? 'porta_chefe_trancada' : 'porta_chefe') : (trancada ? 'porta_trancada_' : 'porta_aberta_') + this.cen.id;
+        // a porta do chefe fica por cima da sombra das bordas e da escuridão: sempre visível
+        const img = this.add.image(L.x, L.y, tex).setAngle(L.ang).setDepth(doChefe ? 52 : 3);
+        img.doChefe = doChefe;
         this.objSala.push(img);
+        if (doChefe) {
+            // luz vermelha pulsando devagar em volta da porta do chefe
+            const luz = this.add.image(L.x, L.y, 'brilho').setTint(0xff2a4a).setScale(2.2).setAlpha(0.25)
+                .setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
+            this.tweens.add({ targets: luz, alpha: 0.45, scale: 2.5, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+            this.objSala.push(luz);
+        }
         const porta = { img, dir, destino, L, bloqueio: null, gatilho: null };
         if (trancada) {
             // porta trancada: um bloqueio invisível que não deixa passar
@@ -229,6 +263,7 @@ RD.CenaJogo = class extends Phaser.Scene {
         // Blocos e inimigos desenhados no mapa da sala
         if (d.mapa) {
             const porLetra = {};
+            const letrasPedra = {};   // letra de cada pedra já colocada (para não repetir a do lado)
             Object.keys(RD.INIMIGOS).forEach((id) => {
                 if (RD.INIMIGOS[id].letraNoMapa) porLetra[RD.INIMIGOS[id].letraNoMapa] = id;
             });
@@ -236,7 +271,15 @@ RD.CenaJogo = class extends Phaser.Scene {
                 for (let col = 0; col < linha.length; col++) {
                     const ch = linha[col];
                     const p = RD.posTile(col + 1, lin + 1);
-                    if (ch === '#') this.gObst.create(p.x, p.y, 'bloco_' + this.cen.id).setDepth(3);
+                    if (ch === '#') {
+                        // letra sorteada, diferente das pedras vizinhas
+                        const proibidas = [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]]
+                            .map(([dx, dy]) => letrasPedra[(col + dx) + ',' + (lin + dy)]).filter(Boolean);
+                        const opcoes = RD.LETRAS_PEDRA.filter(l => !proibidas.includes(l));
+                        const letra = Phaser.Utils.Array.GetRandom(opcoes);
+                        letrasPedra[col + ',' + lin] = letra;
+                        this.gObst.create(p.x, p.y, 'bloco_' + this.cen.id + '_' + letra).setDepth(3);
+                    }
                     else if (porLetra[ch] && !this.salaLimpa) RD.IA.criar(this, porLetra[ch], p.x, p.y, this.cen.forcaInimigos);
                 }
             });
@@ -364,7 +407,7 @@ RD.CenaJogo = class extends Phaser.Scene {
 
     abrirPortas() {
         this.portas.forEach((p) => {
-            p.img.setTexture('porta_aberta');
+            p.img.setTexture(p.img.doChefe ? 'porta_chefe' : 'porta_aberta_' + this.cen.id);
             if (p.bloqueio) { p.bloqueio.destroy(); p.bloqueio = null; }
             if (!p.gatilho) this.criarGatilho(p);
         });

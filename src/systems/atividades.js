@@ -17,7 +17,11 @@ RD.Atividade = class {
     }
 
     limparBlocos() {
-        this.blocos.forEach((b) => { b.texto.destroy(); b.destroy(); });
+        this.blocos.forEach((b) => {
+            const chave = b.texture.key;
+            b.texto.destroy(); b.brilho.destroy(); b.sombraChao.destroy(); b.destroy();
+            if (this.cena.textures.exists(chave)) this.cena.textures.remove(chave); // cada letra tem a sua textura
+        });
         this.blocos = [];
         this.destaques.forEach(d => d.destroy());
         this.destaques = [];
@@ -41,21 +45,32 @@ RD.Atividade = class {
         const r = this.r;
         if (this.def.tipo === 'palavra') {
             const pontos = Phaser.Utils.Array.Shuffle(this.pontosLivres());
-            r.palavra.split('').forEach((letra, i) => this.criarBloco(pontos[i].x, pontos[i].y, letra, 'bloco_letra', 42));
+            r.palavra.split('').forEach((letra, i) => this.criarBloco(pontos[i].x, pontos[i].y, letra));
         } else {
             const opcoes = Phaser.Utils.Array.Shuffle(r.opcoes.slice());
             const xs = [240, 480, 720];
-            opcoes.forEach((o, i) => this.criarBloco(xs[i], RD.CENTRO_Y + 40, o, 'bloco_silaba', 38));
+            opcoes.forEach((o, i) => this.criarBloco(xs[i], RD.CENTRO_Y + 40, o));
         }
         this.atualizarHud();
     }
 
-    criarBloco(x, y, valor, textura, tamanho) {
-        const b = this.cena.gBlocos.create(x, y, textura).setDepth(5);
+    criarBloco(x, y, valor) {
+        const cena = this.cena;
+        // a letra (ou sílaba) é o próprio objeto no chão
+        const b = cena.gBlocos.create(x, y, RD.Arte.letra3D(cena, valor, true)).setDepth(5);
+        b.setScale(RD.Arte.ESCALA_LETRA).refreshBody();
+        b.body.setSize(b.displayWidth * 0.8, b.displayHeight * 0.7, true);
         b.valor = valor;
-        b.texto = this.cena.add.text(x, y - 3, valor, RD.UI.estilo(tamanho, '#14142b', { fontStyle: '700' }))
-            .setOrigin(0.5).setDepth(6);
+        b.texto = cena.add.text(x, y, '', RD.UI.estilo(10)).setVisible(false); // (compatibilidade)
+        b.brilho = cena.add.image(x, y, 'sombra').setVisible(false);          // (compatibilidade)
+        // sombra parada no chão
+        b.sombraChao = cena.add.image(x, y + b.displayHeight * 0.36, 'sombra').setDepth(4)
+            .setScale(valor.length > 1 ? 1.9 : 1.1, 0.9);
         this.blocos.push(b);
+        // aparece "caindo" no chão, com um quique
+        const e = RD.Arte.ESCALA_LETRA;
+        b.setScale(e, e * 0.2).setAlpha(0);
+        cena.tweens.add({ targets: b, scaleY: e, alpha: 1, duration: 260, ease: 'Back.easeOut', delay: this.blocos.length * 70 });
         return b;
     }
 
@@ -89,11 +104,10 @@ RD.Atividade = class {
             RD.Jogador.danoAtividade(this.cena);
             const msgs = RD.TEXTOS.feedback.erro;
             RD.UI.aviso(this.cena, msgs[Math.floor(Math.random() * msgs.length)], 1800);
-            this.cena.tweens.add({ targets: [bloco, bloco.texto], x: '+=6', duration: 50, yoyo: true, repeat: 3 });
+            this.cena.tweens.add({ targets: bloco, x: '+=6', duration: 50, yoyo: true, repeat: 3 });
             if (this.def.tipo === 'silaba') {
                 bloco.usado = true;
-                bloco.setTint(0x8a8aa0);
-                bloco.texto.setColor('#6b6b80');
+                bloco.setTint(0x6a6a80);
             }
             if (RD.Estado.tem('escaneamento')) {
                 this.destacarCerto(RD.TEXTOS.feedback.escaneamento);
@@ -103,12 +117,22 @@ RD.Atividade = class {
         }
     }
 
+    // Letra certa: ela se quebra em pedacinhos (como as pedras do Isaac)
     sumirBloco(bloco) {
-        this.cena.physics.world.disable(bloco); // deixa de ser sólido
-        this.cena.tweens.add({
-            targets: [bloco, bloco.texto], scale: 1.3, alpha: 0, duration: 300,
-            onComplete: () => { bloco.setVisible(false); bloco.texto.setVisible(false); },
-        });
+        const cena = this.cena;
+        cena.physics.world.disable(bloco); // deixa de ser sólido
+        for (let i = 0; i < 9; i++) {
+            const t = 4 + Math.floor(Math.random() * 5);
+            const caco = cena.add.rectangle(bloco.x + Phaser.Math.Between(-14, 14), bloco.y + Phaser.Math.Between(-14, 10),
+                t, t, i % 3 ? 0xe8dcc0 : 0x7a6a50).setStrokeStyle(2, 0x0b0912).setDepth(6);
+            cena.tweens.add({
+                targets: caco, x: caco.x + Phaser.Math.Between(-40, 40), y: caco.y + Phaser.Math.Between(-30, 25),
+                angle: Phaser.Math.Between(-180, 180), alpha: 0, duration: 450, ease: 'Quad.easeOut',
+                onComplete: () => caco.destroy(),
+            });
+        }
+        bloco.setVisible(false);
+        bloco.sombraChao.setVisible(false);
     }
 
     // Mostra a resposta certa com uma moldura amarela (sem piscar)
@@ -117,7 +141,7 @@ RD.Atividade = class {
         const certa = this.respostaCerta();
         const alvo = this.blocos.find(b => !b.usado && b.valor === certa);
         if (!alvo) return;
-        const g = this.cena.add.rectangle(alvo.x, alvo.y, alvo.width + 16, alvo.height + 16)
+        const g = this.cena.add.rectangle(alvo.x, alvo.y, alvo.displayWidth + 16, alvo.displayHeight + 16)
             .setStrokeStyle(5, 0xffd23f).setDepth(6);
         this.destaques.push(g);
         if (mensagem) this.cena.time.delayedCall(1900, () => RD.UI.aviso(this.cena, mensagem, 1800));
@@ -160,7 +184,7 @@ RD.Atividade = class {
         const instrucao = this.def.tipo === 'palavra'
             ? 'Atire nas letras na ordem certa  •  E: ouvir a palavra'
             : 'Atire na sílaba que completa a palavra  •  E: ouvir a palavra';
-        this.cena.hud.setTarefa(r.dica + '   ' + mostra + contador, instrucao, 32);
+        this.cena.hud.setTarefa((r.dica ? r.dica + '   ' : '') + mostra + contador, instrucao, 32);
     }
 
     ouvir() {

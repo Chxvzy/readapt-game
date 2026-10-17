@@ -71,7 +71,7 @@ RD.CenaMenu = class extends Phaser.Scene {
         ];
         inimigos.forEach(([tex, x, y, esc, alfa], i) => {
             this.add.image(x, y + esc * 20, 'sombra').setScale(esc * 0.9).setAlpha(alfa).setDepth(8);
-            const en = this.add.image(x, y, tex).setScale(esc).setAlpha(alfa).setTint(0xb0b0c0).setDepth(9);
+            const en = this.add.image(x, y, tex).setScale(esc * ((RD.Arte.escalas && RD.Arte.escalas[tex]) || 1)).setAlpha(alfa).setTint(0xb0b0c0).setDepth(9);
             this.tweens.add({ targets: en, angle: { from: -8, to: 8 }, duration: 900 + i * 200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
         });
 
@@ -230,8 +230,7 @@ RD.CenaMenu = class extends Phaser.Scene {
             c.add(this.add.text(575, y, txt, RD.UI.estilo(17, '#e9e2d0', { fontStyle: '600', wordWrap: { width: 340 }, lineSpacing: 2 })).setOrigin(0, 0.5));
         };
         dica(190, 'porta_trancada', 0.5, 'Restaure as criaturas para abrir as portas.');
-        dica(262, 'bloco_letra', 0.6, 'Nas atividades, atire nas letras na ordem certa.',
-            (x, y) => this.add.text(x, y - 2, 'A', RD.UI.estilo(22, '#14142b', { fontStyle: '700' })).setOrigin(0.5));
+        dica(262, RD.Arte.letra3D(this, 'A'), 0.6 * RD.Arte.ESCALA_LETRA, 'Nas atividades, atire nas letras na ordem certa.');
         dica(334, 'rachada_letras', 0.45, 'Paredes rachadas escondem salas secretas.');
         dica(406, 'livro', 0.9, 'No chefe, encoste no livro brilhante e responda.');
         dica(478, 'coracao_meio', 0.9, 'Errar faz parte de aprender: tente com calma!');
