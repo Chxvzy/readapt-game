@@ -1,14 +1,28 @@
 // Peças de interface reaproveitadas em várias telas: textos, botões, avisos.
 RD.UI = {
     // Estilo de texto padrão (fonte legível e grande)
+    // A OpenDyslexic é bem mais larga que as fontes comuns: todo tamanho pedido
+    // é reduzido um pouco para os textos caberem nos mesmos lugares de antes.
+    ESCALA_FONTE: 0.78,
     estilo(tamanho, cor, extra) {
         return Object.assign({
             fontFamily: RD.FONTE,
-            fontSize: (tamanho || 24) + 'px',
+            fontSize: Math.round((tamanho || 24) * RD.UI.ESCALA_FONTE) + 'px',
             color: cor || '#ffffff',
             resolution: 2,
             lineSpacing: 8,
         }, extra || {});
+    },
+
+    // Diminui a letra de um texto até ele caber no espaço (largura x altura)
+    encaixar(t, maxL, maxA, minimo) {
+        let tam = parseInt(t.style.fontSize, 10) || 16;
+        if (maxL) t.setWordWrapWidth(maxL);
+        while ((t.width > maxL || (maxA && t.height > maxA)) && tam > (minimo || 8)) {
+            tam -= 1;
+            t.setFontSize(tam + 'px');
+        }
+        return t;
     },
 
     // Botão com fundo, que funciona com mouse e teclado (via RD.UI.menu)
@@ -119,9 +133,11 @@ RD.UI = {
         const t = cena.add.text(0, 0, texto, RD.UI.estilo(22, '#ffffff', {
             align: 'center', wordWrap: { width: 780 },
         })).setOrigin(0.5);
+        RD.UI.encaixar(t, 780, 120, 12);
         const fundo = cena.add.rectangle(0, 0, t.width + 44, t.height + 24, 0x0d1024, 0.9)
             .setStrokeStyle(3, 0xffd23f);
-        const c = cena.add.container(RD.LARGURA / 2, RD.ALTURA - 52, [fundo, t]).setDepth(150);
+        // a caixa cresce para cima: a borda de baixo fica sempre dentro da tela
+        const c = cena.add.container(RD.LARGURA / 2, RD.ALTURA - 20 - (t.height + 24) / 2, [fundo, t]).setDepth(150);
         cena._aviso = c;
         cena.time.delayedCall(duracao || 2600, () => {
             if (cena._aviso !== c) return;
@@ -170,3 +186,4 @@ RD.UI = {
         return c;
     },
 };
+

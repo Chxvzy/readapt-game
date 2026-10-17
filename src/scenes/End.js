@@ -30,8 +30,8 @@ RD.CenaFim = class extends Phaser.Scene {
         pagina.add(papel);
 
         const corTitulo = ruim ? '#a3241b' : verdadeiro ? '#9a6400' : '#1f4e8c';
-        pagina.add(this.add.text(W / 2, 102, f.titulo, RD.UI.estilo(34, corTitulo, {
-            fontStyle: '700', align: 'center', wordWrap: { width: 680 },
+        pagina.add(this.add.text(W / 2, 102, f.titulo, RD.UI.estilo(32, corTitulo, {
+            fontStyle: '700', align: 'center', wordWrap: { width: 720 },
         })).setOrigin(0.5));
         // risco "à mão" embaixo do título
         const risco = this.add.graphics();
@@ -42,7 +42,7 @@ RD.CenaFim = class extends Phaser.Scene {
         this.desenho(pagina, ruim, verdadeiro);
 
         pagina.add(this.add.text(W / 2, 338, f.texto, RD.UI.estilo(20, '#3b2f1e', {
-            align: 'center', wordWrap: { width: 640 }, lineSpacing: 8, fontStyle: '600',
+            align: 'center', wordWrap: { width: 680 }, lineSpacing: 6, fontStyle: '600',
         })).setOrigin(0.5));
 
         this.listaFeitos(pagina);
@@ -112,7 +112,7 @@ RD.CenaFim = class extends Phaser.Scene {
             pagina.addAt(raios, 1); // atrás do título e dos personagens
             this.tweens.add({ targets: raios, angle: 360, duration: 30000, repeat: -1 });
             // a palavra restaurada no alto
-            pagina.add(this.add.text(W / 2, y - 72, 'L E R', RD.UI.estilo(30, '#9a6400', { fontStyle: '700' })).setOrigin(0.5));
+            pagina.add(this.add.text(W / 2, y - 64, 'L E R', RD.UI.estilo(30, '#9a6400', { fontStyle: '700' })).setOrigin(0.5));
         }
 
         sombra(W / 2 - 90);

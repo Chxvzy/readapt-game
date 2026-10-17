@@ -9,7 +9,8 @@ RD.LINHAS = 12;            // quadradinhos na altura da sala
 RD.ALTURA = RD.TOPO + RD.LINHAS * RD.TILE; // 80 + 576 = 656
 RD.PIXEL = 3;              // cada "pixel" da arte vira 3x3 na tela
 
-RD.FONTE = 'Lexend, OpenDyslexic, Verdana, Arial, sans-serif';
+// Fonte de todos os textos do jogo: OpenDyslexic (feita para quem tem dislexia)
+RD.FONTE = 'OpenDyslexic, Lexend, Verdana, Arial, sans-serif';
 // Letras dos objetos do mapa (pedras e letras riscadas no chão)
 RD.FONTE_DISLEXIA = 'OpenDyslexic, Lexend, Verdana, Arial, sans-serif';
 

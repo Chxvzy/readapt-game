@@ -115,12 +115,14 @@ RD.CenaMenu = class extends Phaser.Scene {
             shadow: { offsetX: 0, offsetY: 8, color: '#000000', blur: 0, fill: true, stroke: true },
         });
         const letras = palavra.split('').map(l => this.add.text(0, 0, l, estilo).setOrigin(0.5).setDepth(35));
-        const total = letras.reduce((s, t) => s + t.width - 12, 0);
+        // largura de cada letra sem o contorno e sem a "folga" lateral da fonte
+        const passo = (t) => t.width - 12 - t.width * 0.16;
+        const total = letras.reduce((s, t) => s + passo(t), 0);
         let x = W / 2 - total / 2;
         letras.forEach((t, i) => {
-            x += (t.width - 12) / 2;
+            x += passo(t) / 2;
             t.setPosition(x, 82);
-            x += (t.width - 12) / 2;
+            x += passo(t) / 2;
             // cada letra balança um pouquinho, fora de sincronia
             this.tweens.add({ targets: t, y: 76, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: i * 140 });
         });

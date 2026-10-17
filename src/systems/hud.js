@@ -45,9 +45,13 @@ RD.Hud = class {
     }
 
     setTarefa(titulo, subtitulo, tamanho) {
+        // os textos de cima ficam entre os corações e o mini-mapa
         this.titulo.setText(titulo || '');
-        this.titulo.setFontSize((tamanho || 26) + 'px');
+        this.titulo.setFontSize(Math.round((tamanho || 26) * RD.UI.ESCALA_FONTE) + 'px');
+        RD.UI.encaixar(this.titulo, 520, 40, 12);
         this.subtitulo.setText(subtitulo || '');
+        this.subtitulo.setFontSize(Math.round(16 * RD.UI.ESCALA_FONTE) + 'px');
+        RD.UI.encaixar(this.subtitulo, 560, 22, 9);
     }
 
     // Mini-mapa no canto direito (salas visitadas e vizinhas)

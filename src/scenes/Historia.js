@@ -284,9 +284,9 @@ RD.CenaHistoria = class extends Phaser.Scene {
 
         // 2º andar: chega pela direita, a escada fica à esquerda
         const y2 = 36 + 146 + altura / 2 + 14;
-        p.add(this.add.image(360, y2, 'escada_labirinto_direita').setScale(0.9));
-        p.add(this.add.image(720, y2 + 6, 'criatura_confusao'));
-        p.add(this.add.image(560, y2 + 10, 'palavra_embaralhada'));
+        p.add(this.add.image(520, y2, 'escada_labirinto_direita').setScale(0.9));
+        p.add(this.add.image(820, y2 + 6, 'criatura_confusao'));
+        p.add(this.add.image(690, y2 + 10, 'palavra_embaralhada'));
 
         // 3º andar: a Dislexia prendendo a criança
         const y3 = 36 + 292 + altura / 2 + 10;
@@ -296,7 +296,7 @@ RD.CenaHistoria = class extends Phaser.Scene {
         p.add(this.add.image(600, y3 + 18, 'crianca').setScale(1.1));
 
         // setinhas mostrando o caminho para baixo
-        [[800, 36 + altura + 5], [360, 36 + 146 + altura + 5]].forEach(([x, y], i) => {
+        [[800, 36 + altura + 5], [520, 36 + 146 + altura + 5]].forEach(([x, y], i) => {
             const s = this.add.text(x, y, '▼', RD.UI.estilo(22, '#ffd23f', { stroke: '#000000', strokeThickness: 5 })).setOrigin(0.5);
             p.add(s);
             this.tweens.add({ targets: s, y: y + 5, duration: 700, yoyo: true, repeat: -1, delay: i * 300, ease: 'Sine.easeInOut' });

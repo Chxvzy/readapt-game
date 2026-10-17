@@ -13,9 +13,27 @@
 RD.Arte = {
     lista: [],
 
+    sobDemanda: {},          // desenhos que só são feitos quando o jogo precisa deles
+    registrandoSobDemanda: false,
+
     // Registra um desenho livre (feito com o canvas)
     add(chave, largura, altura, uso, desenhar, naoTrocavel) {
-        this.lista.push({ chave, largura, altura, uso, desenhar, naoTrocavel: !!naoTrocavel });
+        const s = { chave, largura, altura, uso, desenhar, naoTrocavel: !!naoTrocavel };
+        if (this.registrandoSobDemanda) this.sobDemanda[chave] = s;
+        else this.lista.push(s);
+    },
+
+    // Desenha agora uma textura "sob demanda" (se ainda não existir)
+    garantir(cena, chave) {
+        if (cena.textures.exists(chave)) return chave;
+        const s = this.sobDemanda[chave];
+        if (!s) return chave;
+        const tex = cena.textures.createCanvas(s.chave, s.largura, s.altura);
+        const ctx = tex.getContext();
+        ctx.imageSmoothingEnabled = false;
+        s.desenhar(ctx, s.largura, s.altura);
+        tex.refresh();
+        return chave;
     },
 
     // Registra um desenho pixel a pixel.
@@ -634,10 +652,19 @@ RD.Arte = {
         if (cena.textures.exists(chave)) return chave;
         const S = 4;                                   // 4 pontos por unidade (= pixels reais da tela)
         const silaba = valor.length > 1;
-        const W = (silaba ? 66 : 36) * S, H = 40 * S;
-        const tam = (silaba ? 25 : 30) * S, prof = 5 * S;
-        const cx = W / 2, cy = H / 2 - 3 * S;
+        const tam = (silaba ? 22 : 27) * S, prof = 5 * S;
         const fonte = '700 ' + tam + 'px ' + RD.FONTE;
+        // mede a letra de verdade para a imagem ter o tamanho certo (nada cortado)
+        const medidor = document.createElement('canvas').getContext('2d');
+        medidor.font = fonte;
+        const med = medidor.measureText(valor);
+        const margem = 5 * S;                          // espaço para contorno e lascas
+        const largLetra = med.actualBoundingBoxLeft + med.actualBoundingBoxRight;
+        const altLetra = med.actualBoundingBoxAscent + med.actualBoundingBoxDescent;
+        const W = Math.ceil(largLetra + margem * 2), H = Math.ceil(altLetra + prof + margem * 2);
+        const xLetra = margem + med.actualBoundingBoxLeft;          // onde a letra é escrita
+        const yBase = margem + med.actualBoundingBoxAscent;
+        const cx = margem + largLetra / 2, cy = margem + altLetra / 2;  // meio da letra
         const novaTela = () => { const t = document.createElement('canvas'); t.width = W; t.height = H; return t; };
         const r = unica ? Math.random : A.aleatorio(valor.charCodeAt(0) * 31 + valor.length);
 
@@ -645,8 +672,8 @@ RD.Arte = {
         //    lateral e frente) é feito a partir dela, então o contorno segue a quebra.
         const forma = novaTela();
         const fm = forma.getContext('2d');
-        fm.font = fonte; fm.textAlign = 'center'; fm.textBaseline = 'middle';
-        fm.fillStyle = '#000'; fm.fillText(valor, cx, cy);
+        fm.font = fonte; fm.textAlign = 'left'; fm.textBaseline = 'alphabetic';
+        fm.fillStyle = '#000'; fm.fillText(valor, xLetra, yBase);
         const px = fm.getImageData(0, 0, W, H).data;
         const cheio = (x, y) => x >= 0 && y >= 0 && x < W && y < H && px[(Math.floor(y) * W + Math.floor(x)) * 4 + 3] > 128;
         fm.globalCompositeOperation = 'destination-out';
@@ -695,7 +722,7 @@ RD.Arte = {
         const frente = colorir('#e9ddc2');
         const f = frente.getContext('2d');
         f.globalCompositeOperation = 'source-atop';
-        const gr = f.createLinearGradient(0, cy - tam * 0.5, 0, cy + tam * 0.5);
+        const gr = f.createLinearGradient(0, cy - altLetra * 0.5, 0, cy + altLetra * 0.5);
         gr.addColorStop(0, '#fff7e3'); gr.addColorStop(0.45, '#eadfc4'); gr.addColorStop(1, '#c4b28b');
         f.fillStyle = gr; f.fillRect(0, 0, W, H);
         for (let i = 0; i < (silaba ? 26 : 14); i++) {
@@ -998,49 +1025,87 @@ RD.Arte = {
 
         // Pedra (obstáculo): rocha com volume, rachaduras e uma letra gravada.
         // No Labirinto tem musgo; no Núcleo a letra brilha em vermelho.
-        // Uma versão da pedra para cada letra de A a Z (o jogo sorteia a letra de cada pedra)
+        // Pedras: 5 formatos diferentes x 26 letras (A a Z). O jogo sorteia o formato
+        // e a letra de cada pedra; cada combinação só é desenhada quando aparece.
         RD.LETRAS_PEDRA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-        [c.letra].concat(RD.LETRAS_PEDRA).forEach((letra, iLetra) => {
-            const chave = iLetra === 0 ? 'bloco_' + id : 'bloco_' + id + '_' + letra;
+        RD.FORMAS_PEDRA = 5;
+        const formaPedra = (forma) => {
             const g = Pintor.grade(24, 24);
-            Pintor.elipse(g, 12, 14, 10.5, 8.5, 's');
-            Pintor.elipse(g, 9, 10, 7, 6, 's');
-            Pintor.elipse(g, 16, 11, 5.5, 5, 's');
-            Pintor.ret(g, 4, 15, 1, 3, 'x'); Pintor.px(g, 5, 18, 'x'); Pintor.px(g, 6, 19, 'x');   // rachaduras
-            Pintor.px(g, 18, 8, 'x'); Pintor.px(g, 19, 9, 'x'); Pintor.px(g, 19, 10, 'x');
-            Pintor.ret(g, 6, 6, 3, 1, 'h'); Pintor.ret(g, 5, 7, 1, 2, 'h');                         // brilho
-            if (id === 'labirinto') {
-                [[3, 12], [4, 11], [5, 11], [14, 6], [15, 6], [16, 6], [17, 7], [12, 20], [13, 20]].forEach(([x, y]) => Pintor.px(g, x, y, 'u'));
+            const r = A.aleatorio(700 + forma * 13 + n);
+            if (forma === 0) {            // pedra irregular (a original)
+                Pintor.elipse(g, 12, 14, 10.5, 8.5, 's');
+                Pintor.elipse(g, 9, 10, 7, 6, 's');
+                Pintor.elipse(g, 16, 11, 5.5, 5, 's');
+            } else if (forma === 1) {     // pedregulho redondo
+                Pintor.elipse(g, 12, 13.5, 10, 9.5, 's');
+            } else if (forma === 2) {     // rocha alta e pontuda
+                Pintor.elipse(g, 12, 16, 8.5, 7, 's');
+                Pintor.elipse(g, 11, 10, 6, 7.5, 's');
+                Pintor.elipse(g, 13.5, 5.5, 3, 4, 's');
+            } else if (forma === 3) {     // laje larga e baixa
+                Pintor.elipse(g, 12, 16, 11, 6, 's');
+                Pintor.elipse(g, 10, 12.5, 8, 5, 's');
+                Pintor.elipse(g, 16, 13, 5, 4, 's');
+            } else {                      // pedra partida em duas
+                Pintor.elipse(g, 7.5, 14.5, 6.5, 8, 's');
+                Pintor.elipse(g, 16.5, 13.5, 6.5, 9, 's');
+                for (let y = 2; y < 24; y++) Pintor.px(g, 12 - ((y >> 1) % 2), y, '.');
             }
-            const mapa = Pintor.texto(Pintor.contorno(g));
-            A.mapa(chave, mapa, {
-                k: K, s: c.pedra, h: c.pedraClara, x: c.pedraEscura, L: c.letraPedra, u: '#4f9a4a',
-            }, 2, iLetra === 0 ? 'Pedra (obstáculo) do cenário ' + id : 'Pedra com a letra ' + letra + ' (' + id + ')', (ctx) => {
-                // letra gravada na pedra, na fonte OpenDyslexic: um fio de luz
-                // embaixo e a letra funda por cima (parece entalhada)
-                // acha o meio da pedra (pelos pixels desenhados) e o tamanho real da letra
-                const dados = ctx.getImageData(0, 0, 48, 48).data;
-                let x0 = 48, y0 = 48, x1 = 0, y1 = 0;
-                for (let y = 0; y < 48; y++) for (let x = 0; x < 48; x++) {
-                    if (dados[(y * 48 + x) * 4 + 3] > 0) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+            // brilho no alto e à esquerda, rachaduras e lasquinhas sorteadas
+            let topo = 24, esq = 24;
+            for (let y = 0; y < 24; y++) for (let x = 0; x < 24; x++) if (g[y][x] === 's') { topo = Math.min(topo, y); esq = Math.min(esq, x); }
+            Pintor.ret(g, esq + 3, topo + 2, 3, 1, 'h'); Pintor.ret(g, esq + 2, topo + 3, 1, 2, 'h');
+            for (let k = 0; k < 2; k++) {
+                let x = 4 + Math.floor(r() * 16), y = 6 + Math.floor(r() * 12);
+                for (let p = 0; p < 3 + Math.floor(r() * 3); p++) {
+                    if (g[y] && g[y][x] === 's') Pintor.px(g, x, y, 'x');
+                    x += Math.round(r() * 2 - 1); y += 1;
                 }
-                ctx.font = '700 17px ' + RD.FONTE_DISLEXIA;
-                ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-                const m = ctx.measureText(letra);
-                const larg = m.actualBoundingBoxLeft + m.actualBoundingBoxRight;
-                const alt = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
-                // centraliza a letra no meio da pedra (um pouquinho acima, por causa da luz embaixo)
-                const lx = Math.round((x0 + x1 + 1) / 2 - larg / 2 + m.actualBoundingBoxLeft - 0.5);
-                const ly = Math.round((y0 + y1 + 1) / 2 + alt / 2 - m.actualBoundingBoxDescent - 0.5);
-                ctx.fillStyle = c.pedraClara; ctx.fillText(letra, lx + 1, ly + 1);
-                ctx.fillStyle = c.letraPedra; ctx.fillText(letra, lx, ly);
-                // sombra no chão por baixo da pedra
-                ctx.globalCompositeOperation = 'destination-over';
-                ctx.fillStyle = 'rgba(0,0,0,0.4)';
-                ctx.beginPath(); ctx.ellipse(24, 42, 21, 5, 0, 0, Math.PI * 2); ctx.fill();
-                ctx.globalCompositeOperation = 'source-over';
-            }, 's');
-        });
+            }
+            if (id === 'labirinto') {
+                for (let k = 0; k < 9; k++) {
+                    const x = Math.floor(r() * 24), y = Math.floor(r() * 24);
+                    if (g[y][x] === 's' && (!g[y - 1] || g[y - 1][x] !== 's' || r() < 0.3)) Pintor.px(g, x, y, 'u');
+                }
+            }
+            return Pintor.texto(Pintor.contorno(g));
+        };
+        const desenharLetraPedra = (letra) => (ctx) => {
+            // letra gravada na pedra, na fonte OpenDyslexic, centralizada pelos
+            // pixels da pedra: um fio de luz embaixo e a letra funda por cima
+            const dados = ctx.getImageData(0, 0, 48, 48).data;
+            let x0 = 48, y0 = 48, x1 = 0, y1 = 0;
+            for (let y = 0; y < 48; y++) for (let x = 0; x < 48; x++) {
+                if (dados[(y * 48 + x) * 4 + 3] > 0) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+            }
+            ctx.font = '700 17px ' + RD.FONTE_DISLEXIA;
+            ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+            const m = ctx.measureText(letra);
+            const larg = m.actualBoundingBoxLeft + m.actualBoundingBoxRight;
+            const alt = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
+            const lx = Math.round((x0 + x1 + 1) / 2 - larg / 2 + m.actualBoundingBoxLeft - 0.5);
+            const ly = Math.round((y0 + y1 + 1) / 2 + alt / 2 - m.actualBoundingBoxDescent - 0.5);
+            ctx.fillStyle = c.pedraClara; ctx.fillText(letra, lx + 1, ly + 1);
+            ctx.fillStyle = c.letraPedra; ctx.fillText(letra, lx, ly);
+            // sombra no chão por baixo da pedra
+            ctx.globalCompositeOperation = 'destination-over';
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.beginPath(); ctx.ellipse(24, 42, 21, 5, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.globalCompositeOperation = 'source-over';
+        };
+        const palPedra = { k: K, s: c.pedra, h: c.pedraClara, x: c.pedraEscura, L: c.letraPedra, u: '#4f9a4a' };
+        // pedra "padrão" (usada nos ícones do menu)
+        A.mapa('bloco_' + id, formaPedra(0), palPedra, 2, 'Pedra (obstáculo) do cenário ' + id, desenharLetraPedra(c.letra), 's');
+        // todas as combinações, desenhadas só quando aparecem no jogo
+        A.registrandoSobDemanda = true;
+        for (let forma = 0; forma < RD.FORMAS_PEDRA; forma++) {
+            const mapaForma = formaPedra(forma);
+            RD.LETRAS_PEDRA.forEach((letra) => {
+                A.mapa('bloco_' + id + '_' + forma + '_' + letra, mapaForma, palPedra, 2,
+                    'Pedra formato ' + forma + ', letra ' + letra + ' (' + id + ')', desenharLetraPedra(letra), 's');
+            });
+        }
+        A.registrandoSobDemanda = false;
 
         A.add('rachada_' + id, 96, 48, 'Parede rachada (esconde sala secreta) do cenário ' + id, (ctx) => {
             tijolos(ctx, c, 96, 301 + n);
@@ -1220,20 +1285,103 @@ RD.Arte = {
     A.mapa('porta_aberta', mapaPorta(false), paletaPorta(RD.CORES_CENARIO.letras), 2, 'Porta aberta', sombraVao, 'pab');
     A.mapa('porta_trancada', mapaPorta(true), paletaPorta(RD.CORES_CENARIO.letras), 2, 'Porta trancada', null, 'pabw');
 
+    // ---------------- DECORAÇÃO DAS SALAS (tema dislexia) ----------------
+    // Objetos só de enfeite (não têm colisão): livros com letras espelhadas,
+    // folhas rabiscadas, cubos de alfabeto, lápis quebrado, régua de leitura
+    // colorida, velas e letrinhas confundíveis (b, d, p, q) caídas no chão.
+    (function () {
+        const PAL = {
+            k: K, p: '#e9dcbf', P: '#c9b98f', g: '#8a7a5a', l: '#6b5a40', b: '#2a2440',
+            c: '#7a2a3a', C: '#a84458', v: '#2f6b46', V: '#4d9a6a', a: '#2b4c8a', A: '#4a74c0',
+            m: '#b07a3a', M: '#d9a25a', y: '#e8b923', Y: '#ffd95a', r: '#d24a4a', w: '#f2ead8',
+            n: '#3a2a1a', f: '#ff9a3a', F: '#ffe08a', t: '#5fd0ff', T: '#a8ecff',
+        };
+        const fazer = (chave, w, h, desenho, uso, sombra) => {
+            const g = Pintor.grade(w, h);
+            desenho(g);
+            A.mapa(chave, Pintor.texto(Pintor.contorno(g)), PAL, 2, uso, null, sombra || '');
+        };
+        const letrinha = (g, forma, x, y, cor) => forma.forEach((linha, j) => {
+            for (let i = 0; i < linha.length; i++) if (linha[i] === '#') Pintor.px(g, x + i, y + j, cor);
+        });
+        const B = ['#..', '#..', '##.', '#.#', '##.'], D = ['..#', '..#', '.##', '#.#', '.##'];
+        const Pm = ['##.', '#.#', '##.', '#..', '#..'], Q = ['.##', '#.#', '.##', '..#', '..#'];
+
+        // livro aberto: "b" numa página e "d" (espelhado) na outra
+        fazer('deco_livro', 18, 12, (g) => {
+            Pintor.ret(g, 1, 2, 16, 9, 'c');
+            Pintor.ret(g, 2, 1, 6, 9, 'p'); Pintor.ret(g, 10, 1, 6, 9, 'p');
+            Pintor.ret(g, 8, 1, 2, 10, 'g');
+            [3, 5].forEach(y => { Pintor.ret(g, 3, y + 4, 4, 1, 'P'); Pintor.ret(g, 11, y + 4, 4, 1, 'P'); });
+            letrinha(g, B, 4, 2, 'b'); letrinha(g, D, 12, 2, 'b');
+        }, 'Enfeite: livro aberto com b e d');
+
+        // pilha de livros coloridos
+        fazer('deco_pilha', 16, 14, (g) => {
+            Pintor.ret(g, 2, 10, 13, 3, 'a'); Pintor.ret(g, 2, 10, 13, 1, 'A'); Pintor.ret(g, 13, 11, 1, 2, 'p');
+            Pintor.ret(g, 1, 6, 12, 4, 'v'); Pintor.ret(g, 1, 6, 12, 1, 'V'); Pintor.ret(g, 1, 7, 1, 3, 'p');
+            Pintor.ret(g, 3, 2, 11, 4, 'c'); Pintor.ret(g, 3, 2, 11, 1, 'C'); Pintor.ret(g, 12, 3, 1, 3, 'p');
+            Pintor.px(g, 6, 8, 'y'); Pintor.px(g, 7, 8, 'y'); Pintor.px(g, 7, 4, 'y'); Pintor.px(g, 8, 4, 'y');
+        }, 'Enfeite: pilha de livros', 'avc');
+
+        // folha de papel com rabiscos e um "p" e um "q"
+        fazer('deco_folha', 12, 14, (g) => {
+            Pintor.ret(g, 1, 1, 10, 12, 'p');
+            Pintor.px(g, 10, 1, '.'); Pintor.px(g, 9, 1, 'P'); Pintor.px(g, 10, 2, 'P');
+            [3, 5, 9, 11].forEach(y => Pintor.ret(g, 2, y, 4 + (y % 3), 1, 'g'));
+            letrinha(g, Pm, 7, 4, 'l'); letrinha(g, Q, 3, 7, 'l');
+        }, 'Enfeite: folha com p e q');
+
+        // cubo de alfabeto (de brinquedo) com a letra "d"
+        fazer('deco_cubo', 13, 13, (g) => {
+            Pintor.ret(g, 1, 1, 11, 11, 'm');
+            Pintor.ret(g, 1, 9, 11, 3, 'n');
+            Pintor.ret(g, 2, 2, 9, 7, 'M');
+            letrinha(g, D, 5, 3, 'r');
+        }, 'Enfeite: cubo de alfabeto com d', 'm');
+
+        // lápis quebrado em dois pedaços
+        fazer('deco_lapis', 18, 7, (g) => {
+            Pintor.ret(g, 1, 2, 7, 3, 'y'); Pintor.ret(g, 1, 2, 7, 1, 'Y'); Pintor.ret(g, 1, 2, 2, 3, 'r');
+            Pintor.ret(g, 10, 3, 4, 3, 'y'); Pintor.ret(g, 10, 3, 4, 1, 'Y');
+            Pintor.ret(g, 14, 3, 2, 3, 'M'); Pintor.px(g, 16, 4, 'b');
+        }, 'Enfeite: lápis quebrado');
+
+        // régua de leitura colorida (ajuda a ler uma linha por vez)
+        fazer('deco_regua', 20, 7, (g) => {
+            Pintor.ret(g, 1, 1, 18, 5, 't');
+            Pintor.ret(g, 1, 1, 18, 1, 'T');
+            for (let x = 3; x < 18; x += 3) Pintor.ret(g, x, 4, 1, 2, 'a');
+        }, 'Enfeite: régua de leitura colorida');
+
+        // vela com pingos de cera
+        fazer('deco_vela', 8, 15, (g) => {
+            Pintor.ret(g, 2, 6, 4, 8, 'w'); Pintor.ret(g, 1, 12, 6, 2, 'p');
+            Pintor.px(g, 2, 7, 'p'); Pintor.px(g, 5, 9, 'p');
+            Pintor.ret(g, 3, 1, 2, 4, 'f'); Pintor.px(g, 3, 2, 'F'); Pintor.px(g, 4, 3, 'F'); Pintor.px(g, 4, 5, 'n');
+        }, 'Enfeite: vela');
+
+        // letrinhas que se confundem caídas no chão
+        [['b', B], ['d', D], ['p', Pm], ['q', Q]].forEach(([nome, forma]) => {
+            fazer('deco_letra_' + nome, 6, 8, (g) => letrinha(g, forma, 1, 1, 'w'), 'Enfeite: letra ' + nome);
+        });
+    })();
+
     // ---------------- PLAQUINHA ----------------
     // Plaquinha pequena de madeira com um papel pregado (o jogo escreve o nome por cima)
     (function () {
-        const W = 44, H = 28;
+        // 52 x 30 (x2 = 104 x 60); o papel vai de x 6 a 98 e de y 4 a 32
+        const W = 52, H = 30;
         const g = Pintor.grade(W, H);
-        Pintor.ret(g, 20, 16, 4, 11, 'P');                   // poste
-        Pintor.px(g, 20, 17, 'p'); Pintor.ret(g, 20, 16, 1, 11, 'p');
-        Pintor.ret(g, 18, 26, 8, 2, 'P');                    // base
-        Pintor.ret(g, 1, 1, W - 2, 16, 'm');                 // tábua
-        Pintor.ret(g, 1, 9, W - 2, 1, 'M');
-        Pintor.ret(g, 1, 15, W - 2, 2, 'M');
-        Pintor.ret(g, 3, 2, W - 6, 12, 'f');                 // papel
+        Pintor.ret(g, 24, 18, 4, 11, 'P');                   // poste
+        Pintor.ret(g, 24, 18, 1, 11, 'p');
+        Pintor.ret(g, 22, 28, 8, 2, 'P');                    // base
+        Pintor.ret(g, 1, 1, W - 2, 18, 'm');                 // tábua
+        Pintor.ret(g, 1, 10, W - 2, 1, 'M');
+        Pintor.ret(g, 1, 17, W - 2, 2, 'M');
+        Pintor.ret(g, 3, 2, W - 6, 14, 'f');                 // papel
         Pintor.ret(g, 3, 2, W - 6, 1, 'F');
-        Pintor.px(g, W - 4, 13, 'r'); Pintor.px(g, W - 5, 13, 'r'); Pintor.px(g, W - 4, 12, 'r');
+        Pintor.px(g, W - 4, 15, 'r'); Pintor.px(g, W - 5, 15, 'r'); Pintor.px(g, W - 4, 14, 'r');
         [[4, 3], [W - 5, 3]].forEach(([x, y]) => Pintor.px(g, x, y, 'n'));
         A.mapa('placa', Pintor.texto(Pintor.contorno(g)),
             { k: K, m: '#8a5a32', M: '#5e3a1e', P: '#4a2e17', p: '#6b4423', f: '#efe2c0', F: '#fff6dd', r: '#c9b78e', n: '#3a2a1a' },

@@ -55,7 +55,7 @@ RD.TEXTOS = {
     // Dicas escritas no chão da primeira sala
     dicasChao: [
         { texto: 'WASD para andar', col: 4, lin: 8 },
-        { texto: 'Setas ou Espaço: atirar', col: 15, lin: 8 },
+        { texto: 'Setas ou Espaço: atirar', col: 14, lin: 8 },
         { texto: 'E perto do Bip para conversar', col: 10, lin: 10 },
     ],
 
@@ -105,7 +105,7 @@ RD.TEXTOS = {
             dica: 'Dica: faça todas as atividades e encontre as salas secretas para ver o final verdadeiro.',
         },
         verdadeiro: {
-            titulo: 'O mundo foi totalmente restaurado!',
+            titulo: 'O mundo foi restaurado!',
             texto: 'Cada palavra voltou ao lugar e a escuridão sumiu de vez. A criança lê com alegria e confiança, e o Readapt volta ao laboratório com orgulho. Final verdadeiro!',
         },
     },

@@ -54,7 +54,7 @@ RD.CenaBoot = class extends Phaser.Scene {
         // Espera as fontes Lexend e OpenDyslexic carregarem (no máximo 2 segundos)
         const fonte = document.fonts && document.fonts.load
             ? Promise.race([
-                Promise.all([document.fonts.load('700 20px Lexend'), document.fonts.load('400 20px Lexend'), document.fonts.load('700 20px OpenDyslexic')]),
+                Promise.all([document.fonts.load('700 20px Lexend'), document.fonts.load('400 20px Lexend'), document.fonts.load('700 20px OpenDyslexic'), document.fonts.load('400 20px OpenDyslexic')]),
                 new Promise(r => setTimeout(r, 2000)),
             ])
             : Promise.resolve();

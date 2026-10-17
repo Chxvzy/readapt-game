@@ -278,7 +278,10 @@ RD.CenaJogo = class extends Phaser.Scene {
                         const opcoes = RD.LETRAS_PEDRA.filter(l => !proibidas.includes(l));
                         const letra = Phaser.Utils.Array.GetRandom(opcoes);
                         letrasPedra[col + ',' + lin] = letra;
-                        this.gObst.create(p.x, p.y, 'bloco_' + this.cen.id + '_' + letra).setDepth(3);
+                        // formato sorteado também (5 tipos de pedra)
+                        const forma = Phaser.Math.Between(0, RD.FORMAS_PEDRA - 1);
+                        const chave = RD.Arte.garantir(this, 'bloco_' + this.cen.id + '_' + forma + '_' + letra);
+                        this.gObst.create(p.x, p.y, chave).setDepth(3);
                     }
                     else if (porLetra[ch] && !this.salaLimpa) RD.IA.criar(this, porLetra[ch], p.x, p.y, this.cen.forcaInimigos);
                 }
@@ -301,6 +304,8 @@ RD.CenaJogo = class extends Phaser.Scene {
             item.upgrade = d.item;
             this.tweens.add({ targets: item, y: RD.CENTRO_Y - 8, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
         }
+
+        this.decorarSala(d);
 
         // Personagem que conversa
         if (d.npc && RD.TEXTOS.npcs[d.npc]) {
@@ -363,18 +368,94 @@ RD.CenaJogo = class extends Phaser.Scene {
             this.gPortal.add(portal);
             const proximo = RD.CENARIOS[RD.estado.cenario + 1];
             if (proximo) {
-                const px = cx + 92, py = cy - 14;
+                const px = cx + 106, py = cy - 14;
                 const placa = this.add.image(px, py, 'placa').setDepth(6);
                 this.objSala.push(placa);
-                this.objSala.push(this.add.text(px, py - 11, proximo.nome, RD.UI.estilo(10, '#2a1a0e', {
-                    fontStyle: '700', align: 'center', wordWrap: { width: 70 }, lineSpacing: -3,
-                })).setOrigin(0.5).setDepth(6.1));
+                // nome escrito no papel da placa, diminuindo a letra até caber
+                const nomePlaca = this.add.text(px, py - 12, proximo.nome, RD.UI.estilo(14, '#2a1a0e', {
+                    fontStyle: '700', align: 'center', lineSpacing: -2,
+                })).setOrigin(0.5).setDepth(6.1);
+                RD.UI.encaixar(nomePlaca, 84, 26, 7);
+                this.objSala.push(nomePlaca);
                 // a placa é sólida (não dá para atravessar)
-                const z = this.add.zone(px, py + 22, 16, 12);
+                const z = this.add.zone(px, py + 24, 16, 12);
                 this.physics.add.existing(z, true);
                 this.gObst.add(z);
                 RD.Efeitos.sombra(this, placa, 0.6, 27);
             }
+        }
+    }
+
+    // Enfeites com tema de dislexia espalhados pelo chão (sem colisão, embaixo de
+    // tudo). Ficam longe das portas, das pedras e do meio da sala; nas salas de
+    // atividade só vão encostados nas paredes e sem letras, para não confundir.
+    decorarSala(d) {
+        if (d.tipo === 'chefe') return;
+        let semente = 7;
+        const nome = this.cen.id + '|' + this.salaChave;
+        for (let i = 0; i < nome.length; i++) semente = (semente * 31 + nome.charCodeAt(i)) >>> 0;
+        const r = RD.Arte.aleatorio(semente);
+        const ocupado = {};
+        (d.mapa || []).forEach((linha, lin) => {
+            for (let col = 0; col < linha.length; col++) if (linha[col] !== '.') ocupado[(col + 1) + ',' + (lin + 1)] = true;
+        });
+        const atividade = !!d.atividade;
+        const meioLivre = atividade || d.tipo === 'inicio' || d.tipo === 'passagem' || d.tipo === 'secreta' || d.tipo === 'amigo';
+        const perto = (c, l, pc, pl, dist) => Math.abs(c - pc) <= dist && Math.abs(l - pl) <= dist;
+        const livres = [], bordas = [];
+        for (let col = 1; col <= RD.COLS - 2; col++) {
+            for (let lin = 1; lin <= RD.LINHAS - 2; lin++) {
+                if (ocupado[col + ',' + lin]) continue;
+                // frente das portas
+                if ((col >= 8 && col <= 11 && (lin <= 3 || lin >= RD.LINHAS - 4)) || (lin >= 4 && lin <= 7 && (col <= 3 || col >= RD.COLS - 4))) continue;
+                if (meioLivre && col >= 5 && col <= 14 && lin >= 3 && lin <= 8) continue;
+                if (d.tipo === 'inicio' && RD.TEXTOS.dicasChao.some(dc => perto(col, lin, dc.col, dc.lin, 2))) continue;
+                const borda = col === 1 || col === RD.COLS - 2 || lin === 1 || lin === RD.LINHAS - 2;
+                if (borda) bordas.push([col, lin]);
+                if (!atividade) livres.push([col, lin]);
+            }
+        }
+        const sortear = (lista) => lista.splice(Math.floor(r() * lista.length), 1)[0];
+        const por = (tex, cel, extra) => {
+            if (!cel) return null;
+            const p = RD.posTile(cel[0], cel[1]);
+            const img = this.add.image(p.x + (r() - 0.5) * 16, p.y + (r() - 0.5) * 16, tex)
+                .setDepth(1.2).setFlipX(r() < 0.5);
+            if (extra) extra(img);
+            this.objSala.push(img);
+            return img;
+        };
+        // velas encostadas nas paredes, com uma luz quente que respira devagar
+        const nVelas = 1 + Math.floor(r() * 3);
+        for (let i = 0; i < nVelas && bordas.length; i++) {
+            por('deco_vela', sortear(bordas), (img) => {
+                const luz = this.add.image(img.x, img.y - 8, 'brilho').setTint(0xffa040).setScale(1.1).setAlpha(0.22)
+                    .setBlendMode(Phaser.BlendModes.ADD).setDepth(1.1);
+                this.tweens.add({ targets: luz, alpha: 0.32, scale: 1.25, duration: 1600 + r() * 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+                this.objSala.push(luz);
+            });
+        }
+        // livros (podem ir nas paredes mesmo em salas de atividade)
+        const lugaresLivros = atividade ? bordas : livres;
+        const nLivros = atividade ? 1 + Math.floor(r() * 2) : 2 + Math.floor(r() * 2);
+        for (let i = 0; i < nLivros && lugaresLivros.length; i++) {
+            por(r() < 0.5 ? 'deco_pilha' : 'deco_livro', sortear(lugaresLivros));
+        }
+        if (atividade) return;
+        // papéis, cubos, lápis, régua e letrinhas soltas
+        const outros = ['deco_folha', 'deco_folha', 'deco_cubo', 'deco_lapis', 'deco_regua'];
+        const nOutros = 2 + Math.floor(r() * 3);
+        for (let i = 0; i < nOutros && livres.length; i++) {
+            por(outros[Math.floor(r() * outros.length)], sortear(livres), (img) => {
+                img.setAngle((r() - 0.5) * 50);
+                if (img.texture.key === 'deco_regua') img.setAlpha(0.75);
+            });
+        }
+        const nLetras = 2 + Math.floor(r() * 4);
+        for (let i = 0; i < nLetras && livres.length; i++) {
+            por('deco_letra_' + 'bdpq'[Math.floor(r() * 4)], sortear(livres), (img) => {
+                img.setAngle((r() - 0.5) * 70).setAlpha(0.55).setFlipX(false);
+            });
         }
     }
 
@@ -619,9 +700,9 @@ RD.CenaJogo = class extends Phaser.Scene {
         npc.balao.setVisible(false);
 
         const larg = 860, alt = 150;
-        const emCima = this.jogador.y > RD.CENTRO_Y + 40;
+        // a caixa de conversa fica sempre na parte de baixo da tela
         const x0 = (RD.LARGURA - larg) / 2;
-        const y0 = emCima ? RD.TOPO + 22 : RD.ALTURA - alt - 22;
+        const y0 = RD.ALTURA - alt - 22;
         const c = this.add.container(0, 0).setDepth(200);
 
         const g = this.add.graphics();
@@ -641,7 +722,7 @@ RD.CenaJogo = class extends Phaser.Scene {
 
         // nome numa etiqueta
         const nome = this.add.text(x0 + 154, y0 + 20, info.nome, RD.UI.estilo(20, '#ffd23f', { fontStyle: '700' }));
-        const texto = this.add.text(x0 + 154, y0 + 52, '', RD.UI.estilo(23, '#ffffff', {
+        const texto = this.add.text(x0 + 154, y0 + 50, '', RD.UI.estilo(22, '#ffffff', {
             wordWrap: { width: larg - 190 }, lineSpacing: 6,
         }));
         const seta = this.add.text(x0 + larg - 30, y0 + alt - 24, '▼', RD.UI.estilo(18, '#ffffff')).setOrigin(0.5).setVisible(false);
