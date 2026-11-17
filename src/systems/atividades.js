@@ -1,13 +1,23 @@
 // Atividades educativas: palavra embaralhada e sílaba que falta.
 RD.Atividade = class {
-    constructor(cena, def) {
+    // chave: sala da atividade. O progresso fica salvo no estado do jogo, então
+    // sair da sala no meio do desafio e voltar continua de onde parou.
+    constructor(cena, def, chave) {
         this.cena = cena;
         this.def = def;
-        this.rodada = 0;
+        this.chave = chave;
+        const salvo = (chave && RD.estado.progresso && RD.estado.progresso[chave]) || { rodada: 0, pos: 0 };
+        this.rodada = Math.min(salvo.rodada, def.rodadas.length - 1);
         this.concluida = false;
         this.blocos = [];
         this.destaques = [];
-        this.iniciarRodada();
+        this.iniciarRodada(salvo.pos);
+    }
+
+    salvarProgresso(rodada, pos) {
+        if (!this.chave) return;
+        RD.estado.progresso = RD.estado.progresso || {};
+        RD.estado.progresso[this.chave] = { rodada, pos };
     }
 
     get r() { return this.def.rodadas[this.rodada]; }
@@ -37,15 +47,17 @@ RD.Atividade = class {
         return pontos;
     }
 
-    iniciarRodada() {
+    iniciarRodada(pos) {
         this.limparBlocos();
-        this.pos = 0;
+        this.pos = pos || 0;
+        this.salvarProgresso(this.rodada, this.pos);
         this.errosRodada = 0;
         this.resolvida = false;
         const r = this.r;
         if (this.def.tipo === 'palavra') {
             const pontos = Phaser.Utils.Array.Shuffle(this.pontosLivres());
-            r.palavra.split('').forEach((letra, i) => this.criarBloco(pontos[i].x, pontos[i].y, letra));
+            // só as letras que ainda faltam (as já acertadas não voltam)
+            r.palavra.split('').slice(this.pos).forEach((letra, i) => this.criarBloco(pontos[i].x, pontos[i].y, letra));
         } else {
             const opcoes = Phaser.Utils.Array.Shuffle(r.opcoes.slice());
             const xs = [240, 480, 720];
@@ -61,6 +73,7 @@ RD.Atividade = class {
         b.setScale(RD.Arte.ESCALA_LETRA).refreshBody();
         b.body.setSize(b.displayWidth * 0.8, b.displayHeight * 0.7, true);
         b.valor = valor;
+        b.xBase = x;  // posição fixa (a colisão fica sempre aqui)
         b.texto = cena.add.text(x, y, '', RD.UI.estilo(10)).setVisible(false); // (compatibilidade)
         b.brilho = cena.add.image(x, y, 'sombra').setVisible(false);          // (compatibilidade)
         // sombra parada no chão
@@ -90,6 +103,7 @@ RD.Atividade = class {
             this.errosRodada = 0;
             if (this.def.tipo === 'palavra') {
                 this.pos++;
+                this.salvarProgresso(this.rodada, this.pos);
                 this.sumirBloco(bloco);
                 if (this.pos >= this.r.palavra.length) this.fimRodada();
             } else {
@@ -104,7 +118,7 @@ RD.Atividade = class {
             RD.Jogador.danoAtividade(this.cena);
             const msgs = RD.TEXTOS.feedback.erro;
             RD.UI.aviso(this.cena, msgs[Math.floor(Math.random() * msgs.length)], 1800);
-            this.cena.tweens.add({ targets: bloco, x: '+=6', duration: 50, yoyo: true, repeat: 3 });
+            this.tremer(bloco);
             if (this.def.tipo === 'silaba') {
                 bloco.usado = true;
                 bloco.setTint(0x6a6a80);
@@ -115,6 +129,19 @@ RD.Atividade = class {
                 this.destacarCerto(RD.TEXTOS.feedback.dicaErros);
             }
         }
+    }
+
+    // Tremidinha de erro. Sempre volta para o lugar original: antes, vários tiros
+    // seguidos somavam os "+6" e a letra andava para a direita, deixando a colisão para trás.
+    tremer(bloco) {
+        const tw = this.cena.tweens;
+        tw.killTweensOf(bloco);
+        bloco.x = bloco.xBase;
+        bloco.setScale(RD.Arte.ESCALA_LETRA).setAlpha(1);
+        tw.add({
+            targets: bloco, x: bloco.xBase + 6, duration: 50, yoyo: true, repeat: 3,
+            onComplete: () => { bloco.x = bloco.xBase; },
+        });
     }
 
     // Letra certa: ela se quebra em pedacinhos (como as pedras do Isaac)
@@ -158,6 +185,15 @@ RD.Atividade = class {
         const elogios = RD.TEXTOS.feedback.acerto;
         RD.UI.aviso(this.cena, elogios[Math.floor(Math.random() * elogios.length)] + ' Você formou ' + palavra + '!', 1800);
         RD.Som.falar(palavra);
+        // já salva a próxima rodada (se o jogador sair agora, não perde o acerto)
+        if (this.rodada + 1 >= this.def.rodadas.length) {
+            if (this.chave) {
+                RD.estado.atividades[this.chave] = true;
+                if (RD.estado.progresso) delete RD.estado.progresso[this.chave];
+            }
+        } else {
+            this.salvarProgresso(this.rodada + 1, 0);
+        }
         this.cena.time.delayedCall(1500, () => {
             if (!this.cena || this.destruida) return;
             this.rodada++;

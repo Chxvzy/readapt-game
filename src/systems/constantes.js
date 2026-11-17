@@ -30,6 +30,8 @@ RD.REGRAS = {
     intervaloTiro: 300,     // ms entre um tiro e outro
     velocidadeTiro: 430,
     alcanceTiro: 650,       // ms que o tiro dura
+    danoTiro: 1,            // dano do tiro normal
+    danoTiroForte: 3,       // dano do tiro com Pulso Forte (antes era 2 e quase não fazia diferença)
     invulneravel: 1000,     // ms sem levar dano depois de apanhar
     chanceCoracao: 0.15,    // chance de um inimigo deixar meio coração
     errosAteDica: 3,        // erros numa rodada até a resposta ser destacada (sem upgrade)

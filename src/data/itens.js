@@ -7,7 +7,7 @@ RD.UPGRADES = {
     pulso_forte: {
         nome: 'Pulso Forte',
         textura: 'up_pulso',
-        descricao: 'Pulso Forte! Seus tiros agora valem o dobro.',
+        descricao: 'Pulso Forte! Seus tiros agora valem o triplo.',
     },
     coracao_extra: {
         nome: 'Coração Extra',

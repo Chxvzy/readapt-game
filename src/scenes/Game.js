@@ -291,7 +291,7 @@ RD.CenaJogo = class extends Phaser.Scene {
         // Atividade
         if (d.atividade && !e.atividades[k]) {
             const def = RD.ATIVIDADES[d.atividade];
-            if (def) this.atividade = new RD.Atividade(this, def);
+            if (def) this.atividade = new RD.Atividade(this, def, k);
             else console.warn('Atividade não encontrada: ' + d.atividade);
         }
 
@@ -528,6 +528,7 @@ RD.CenaJogo = class extends Phaser.Scene {
         this.cameras.main.once('camerafadeoutcomplete', () => {
             if (dDest.tipo === 'chefe') {
                 RD.estado.sala = destino;
+                RD.estado.entradaChefe = oposto; // lado por onde o Readapt entra na sala do chefe
                 this.scene.start('Chefe');
                 return;
             }
@@ -802,6 +803,7 @@ RD.CenaJogo = class extends Phaser.Scene {
     }
 
     perder() {
+        if (this.trocando) return;
         this.trocando = true;
         this.physics.pause();
         RD.Som.tocar('derrota');

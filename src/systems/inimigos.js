@@ -45,6 +45,14 @@ RD.IA = {
                     }
                     break;
                 }
+                case 'fantasma': {
+                    // segue o Readapt em qualquer lugar da sala, num voo ondulado
+                    const ang = Phaser.Math.Angle.Between(en.x, en.y, j.x, j.y);
+                    const onda = Math.sin(tempo / 260 + en.fase) * 0.6;
+                    en.setVelocity(Math.cos(ang + onda) * en.velocidade, Math.sin(ang + onda) * en.velocidade);
+                    en.setAngle(Math.sin(tempo / 300 + en.fase) * 8);
+                    break;
+                }
                 case 'pular': {
                     if (tempo > en.proximaAcao) {
                         en.proximaAcao = tempo + en.def.intervaloPulo * Phaser.Math.FloatBetween(0.7, 1.3);
@@ -74,6 +82,7 @@ RD.IA = {
     // Tiro do jogador acertou um inimigo
     acertar(cena, tiro, en) {
         if (!tiro.active || !en.active) return;
+        if (tiro.ignorar && tiro.ignorar.indexOf(en) >= 0) return;
         const dano = tiro.dano || 1;
         const vx = tiro.body.velocity.x, vy = tiro.body.velocity.y;
         tiro.destroy();
@@ -98,6 +107,8 @@ RD.IA = {
         const t = cena.add.text(x, y, letras[Math.floor(Math.random() * letras.length)],
             RD.UI.estilo(30, '#ffffff', { fontStyle: '700', stroke: '#2463eb', strokeThickness: 5 }))
             .setOrigin(0.5).setDepth(9);
+        // entra na lista da sala: se o jogador sair antes da animação acabar, ela é apagada junto
+        if (cena.objSala) cena.objSala.push(t);
         cena.tweens.add({ targets: t, y: y - 40, alpha: 0, duration: 700, onComplete: () => t.destroy() });
 
         if (en.def.divideEm) {

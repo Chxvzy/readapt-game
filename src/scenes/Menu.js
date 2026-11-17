@@ -7,6 +7,7 @@ RD.CenaMenu = class extends Phaser.Scene {
         RD.camera(this);
         const W = RD.LARGURA, H = RD.ALTURA;
         this.painel = null;
+        this.saindo = false; // a cena é reaproveitada: sem isso, voltar ao menu deixava o "Jogar" travado
         this.cameras.main.setBackgroundColor('#07060c');
 
         this.criarCenario();

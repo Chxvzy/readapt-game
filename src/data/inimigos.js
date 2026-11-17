@@ -51,8 +51,7 @@ RD.INIMIGOS = {
         corTinta: 0xb08cff,
         letraNoMapa: 'C',
         vida: 3,
-        velocidade: 190,
-        comportamento: 'pular',
-        intervaloPulo: 1700,           // ms entre uma mudança de lugar e outra
+        velocidade: 85,
+        comportamento: 'fantasma',     // flutua atrás do jogador, balançando de um lado para o outro
     },
 };

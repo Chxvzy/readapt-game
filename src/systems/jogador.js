@@ -74,11 +74,22 @@ RD.Jogador = {
         const sx = j.x + dx * 22, sy = j.y + (dx ? 8 : 10 + dy * 14);
         const tiro = cena.gTiros.create(sx, sy, 'pulso').setDepth(8);
         tiro.body.setCircle(9, 2, 2);
-        tiro.dano = forte ? 2 : 1;
+        tiro.dano = forte ? RD.REGRAS.danoTiroForte : RD.REGRAS.danoTiro;
         if (forte) tiro.setScale(1.35).setTint(0xffe680);
         tiro.morreEm = tempo + RD.REGRAS.alcanceTiro;
         tiro.setVelocity(dx * RD.REGRAS.velocidadeTiro, dy * RD.REGRAS.velocidadeTiro);
         tiro.escalaBase = tiro.scale;
+        // inimigos encostados no Readapt e que ficam atrás ou do lado do tiro não "comem" o tiro
+        // (antes, ao apanhar de um inimigo, o tiro sumia nele e não chegava na parede rachada)
+        tiro.ignorar = [];
+        if (cena.gInimigos) {
+            cena.gInimigos.getChildren().forEach((en) => {
+                if (!en.active) return;
+                const dentro = Phaser.Geom.Intersects.RectangleToRectangle(tiro.getBounds(), en.getBounds());
+                const naFrente = (en.x - j.x) * dx + (en.y - j.y) * dy > 10;
+                if (dentro && !naFrente) tiro.ignorar.push(en);
+            });
+        }
         RD.Efeitos.sombra(cena, tiro, 0.35, 20); // a gota "flutua" acima da sombra
         tiro.once('destroy', () => RD.Efeitos.respingo(cena, tiro.x, tiro.y, forte ? 0xffe680 : 0x9fe6ff));
         // olha para onde atirou (como a cabeça do Isaac)
@@ -128,9 +139,10 @@ RD.Jogador = {
         return RD.estado.vida <= 0;
     },
 
-    // Dano por erro em atividade: ensina, mas nunca derruba o jogador
+    // Dano por erro em atividade: meio coração. Se a vida acabar, o jogador perde.
     danoAtividade(cena) {
-        if (RD.estado.vida > 1) RD.estado.vida -= 1;
+        RD.estado.vida = Math.max(0, RD.estado.vida - 1);
         cena.hud.atualizarVida();
+        if (RD.estado.vida <= 0 && cena.perder) cena.perder();
     },
 };

@@ -33,8 +33,19 @@ RD.CenaChefe = class extends Phaser.Scene {
             }
         }
 
-        // A porta por onde o Readapt entrou se fecha atrás dele: não tem como fugir
-        const porta = this.add.image(RD.CENTRO_X, RD.ALTURA - RD.TILE / 2, 'porta_chefe').setAngle(180).setDepth(46);
+        // A porta por onde o Readapt entrou se fecha atrás dele: não tem como fugir.
+        // Ela fica no mesmo lado por onde ele entrou (antes ficava sempre embaixo,
+        // mesmo entrando pela porta da direita da sala anterior).
+        const entrada = RD.estado.entradaChefe || 'baixo';
+        const T = RD.TILE;
+        const lado = {
+            cima: { x: RD.CENTRO_X, y: RD.TOPO + T / 2, ang: 0, jx: RD.CENTRO_X, jy: RD.TOPO + 110 },
+            baixo: { x: RD.CENTRO_X, y: RD.ALTURA - T / 2, ang: 180, jx: RD.CENTRO_X, jy: RD.ALTURA - 110 },
+            esquerda: { x: T / 2, y: RD.CENTRO_Y, ang: -90, jx: 110, jy: RD.CENTRO_Y },
+            direita: { x: RD.LARGURA - T / 2, y: RD.CENTRO_Y, ang: 90, jx: RD.LARGURA - 110, jy: RD.CENTRO_Y },
+        }[entrada] || null;
+        const L = lado || { x: RD.CENTRO_X, y: RD.ALTURA - T / 2, ang: 180, jx: RD.CENTRO_X, jy: RD.ALTURA - 110 };
+        const porta = this.add.image(L.x, L.y, 'porta_chefe').setAngle(L.ang).setDepth(46);
         this.time.delayedCall(700, () => {
             porta.setTexture('porta_chefe_trancada');
             RD.Som.tocar('chefe');
@@ -42,7 +53,7 @@ RD.CenaChefe = class extends Phaser.Scene {
         });
 
         // Personagens
-        this.jogador = RD.Jogador.criar(this, RD.CENTRO_X, RD.ALTURA - 110);
+        this.jogador = RD.Jogador.criar(this, L.jx, L.jy);
         this.gInimigos = this.physics.add.group();
         this.gItens = null;
         this.hud = new RD.Hud(this);
@@ -366,13 +377,16 @@ RD.CenaChefe = class extends Phaser.Scene {
 
     danoJogador(qtd) {
         if (this.trocando || this.pergunta) return;
-        if (RD.Jogador.levarDano(this, qtd)) {
-            this.trocando = true;
-            this.physics.pause();
-            RD.Som.tocar('derrota');
-            this.cameras.main.fadeOut(900, 0, 0, 0);
-            this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Fim', { final: 'ruim' }));
-        }
+        if (RD.Jogador.levarDano(this, qtd)) this.perder();
+    }
+
+    perder() {
+        if (this.trocando) return;
+        this.trocando = true;
+        this.physics.pause();
+        RD.Som.tocar('derrota');
+        this.cameras.main.fadeOut(900, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Fim', { final: 'ruim' }));
     }
 
     alternarPausa() {

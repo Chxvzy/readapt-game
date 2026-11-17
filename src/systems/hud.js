@@ -84,7 +84,10 @@ RD.Hud = class {
             const [x, y] = k.split(',').map(Number);
             const kk = RD.Estado.chave(indiceCenario, k);
             const d = cen.salas[k];
-            let cor = e.visitadas[kk] ? 0x9fb3d1 : 0x3a3f5c;
+            // cinza claro só quando a sala está concluída (inimigos derrotados e
+            // desafio feito). Só pisar na sala não basta: ela continua escura.
+            const pendente = this.salaPendente(cen, indiceCenario, k);
+            let cor = e.visitadas[kk] && !pendente ? 0x9fb3d1 : 0x3a3f5c;
             if (d.tipo === 'chefe') cor = 0xe63946;
             if (d.tipo === 'passagem' && e.visitadas[kk]) cor = 0x7a3cff;
             if (k === salaAtual) cor = 0xffd23f;
@@ -92,11 +95,27 @@ RD.Hud = class {
             const py = y0 + (y - minY) * (alt + gap);
             g.fillStyle(cor, 1);
             g.fillRect(px, py, larg, alt);
-            if (d.atividade && !e.atividades[kk] && k !== salaAtual) {
-                g.fillStyle(0xffffff, 1);
+            // marquinha de "falta fazer": some NA HORA em que a sala é concluída
+            // (antes a sala parecia concluída só por ter sido visitada, e a sala
+            // atual nunca mostrava a marca)
+            if (pendente) {
+                g.fillStyle(pendente === 'atividade' ? 0xffffff : 0xff5a4e, 1);
                 g.fillRect(px + 8, py + 4, 4, 4);
             }
         });
+    }
+
+    // O que ainda falta numa sala: 'atividade', 'inimigos' ou null (concluída)
+    salaPendente(cen, indiceCenario, k) {
+        const d = cen.salas[k];
+        const e = RD.estado;
+        const kk = RD.Estado.chave(indiceCenario, k);
+        if (d.tipo === 'chefe' || e.limpas[kk]) return null;
+        if (d.atividade && !e.atividades[kk]) return 'atividade';
+        const temInimigos = !!(d.mapa && d.mapa.some(l => /[LSPC]/.test(l)));
+        // inimigos só aparecem como pendentes depois que o jogador viu a sala
+        if (temInimigos && e.visitadas[kk]) return 'inimigos';
+        return null;
     }
 
     // Barra de vida do chefe no lugar da tarefa
