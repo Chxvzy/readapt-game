@@ -259,6 +259,7 @@ RD.CenaJogo = class extends Phaser.Scene {
 
     criarConteudo(d, k) {
         const e = RD.estado;
+        const guardados = e.inimigosSala && e.inimigosSala[k]; // inimigos de uma visita anterior
 
         // Blocos e inimigos desenhados no mapa da sala
         if (d.mapa) {
@@ -283,8 +284,15 @@ RD.CenaJogo = class extends Phaser.Scene {
                         const chave = RD.Arte.garantir(this, 'bloco_' + this.cen.id + '_' + forma + '_' + letra);
                         this.gObst.create(p.x, p.y, chave).setDepth(3);
                     }
-                    else if (porLetra[ch] && !this.salaLimpa) RD.IA.criar(this, porLetra[ch], p.x, p.y, this.cen.forcaInimigos);
+                    else if (porLetra[ch] && !this.salaLimpa && !guardados) RD.IA.criar(this, porLetra[ch], p.x, p.y, this.cen.forcaInimigos);
                 }
+            });
+        }
+        // a sala já tinha sido visitada: volta só quem ficou vivo, com a vida que tinha
+        if (guardados && !this.salaLimpa) {
+            guardados.forEach((g) => {
+                const en = RD.IA.criar(this, g.tipo, g.x, g.y, g.forca);
+                en.vida = g.vida;
             });
         }
 
@@ -494,9 +502,21 @@ RD.CenaJogo = class extends Phaser.Scene {
         });
     }
 
+    // Ao sair de uma sala que ainda tem inimigos, guarda quem ficou vivo e com
+    // quanta vida. Assim, ao voltar, os derrotados não reaparecem.
+    guardarInimigos() {
+        const e = RD.estado;
+        e.inimigosSala = e.inimigosSala || {};
+        if (this.salaLimpa || !this.salaK) { delete e.inimigosSala[this.salaK]; return; }
+        e.inimigosSala[this.salaK] = this.gInimigos.getChildren()
+            .filter(en => en.active && en.vida > 0 && en.tipo)
+            .map(en => ({ tipo: en.tipo, x: en.origem.x, y: en.origem.y, vida: en.vida, forca: en.forca }));
+    }
+
     salaConcluida() {
         this.salaLimpa = true;
         RD.estado.limpas[this.salaK] = true;
+        if (RD.estado.inimigosSala) delete RD.estado.inimigosSala[this.salaK];
         this.abrirPortas();
         if (this.portas.length) {
             RD.Som.tocar('porta');
@@ -532,6 +552,7 @@ RD.CenaJogo = class extends Phaser.Scene {
                 this.scene.start('Chefe');
                 return;
             }
+            this.guardarInimigos();
             this.montarSala(destino, oposto);
             this.cameras.main.fadeIn(160, 13, 16, 36);
             this.trocando = false;

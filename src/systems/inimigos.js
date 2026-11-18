@@ -12,6 +12,9 @@ RD.IA = {
         en.tipo = tipo;
         en.def = def;
         en.vida = Math.ceil(def.vida * forca);
+        en.tipo = tipo;
+        en.forca = forca;
+        en.origem = { x, y };   // onde ele nasce de novo se o jogador sair e voltar
         en.velocidade = def.velocidade * (1 + (forca - 1) / 3);
         en.ativoEm = cena.time.now + (atraso === undefined ? 700 : atraso);
         en.proximaAcao = en.ativoEm + Phaser.Math.Between(300, 1200);
@@ -112,7 +115,10 @@ RD.IA = {
         cena.tweens.add({ targets: t, y: y - 40, alpha: 0, duration: 700, onComplete: () => t.destroy() });
 
         if (en.def.divideEm) {
-            [-20, 20].forEach((dx) => this.criar(cena, en.def.divideEm, x + dx, y, 1, 250));
+            [-20, 20].forEach((dx) => {
+                const f = this.criar(cena, en.def.divideEm, x + dx, y, 1, 250);
+                f.origem = { x: en.origem.x + dx, y: en.origem.y };
+            });
         }
         // às vezes deixa meio coração
         if (cena.gItens && RD.estado.vida < RD.estado.vidaMax && Math.random() < RD.REGRAS.chanceCoracao) {

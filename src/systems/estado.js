@@ -10,6 +10,7 @@ RD.Estado = {
             limpas: {},        // salas já limpas
             atividades: {},    // atividades concluídas
             progresso: {},     // atividades começadas: { rodada, pos } de cada sala
+            inimigosSala: {},  // inimigos que ficaram vivos em cada sala deixada pela metade
             segredos: {},      // salas secretas encontradas
             visitadas: {},
             itens: {},         // itens já pegos
